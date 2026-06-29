@@ -52,6 +52,73 @@ export default function WorkoutPage() {
   const removeSet = useWorkoutStore((s) => s.removeSet);
   const completeSet = useWorkoutStore((s) => s.completeSet);
 
+  // Bluetooth Heart Rate States
+  const [heartRate, setHeartRate] = useState<number | null>(null);
+  const [heartRates, setHeartRates] = useState<number[]>([]);
+  const [bluetoothSupported, setBluetoothSupported] = useState(false);
+  const [connectedDevice, setConnectedDevice] = useState<any>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && (navigator as any).bluetooth) {
+      setBluetoothSupported(true);
+    }
+  }, []);
+
+  const handleToggleBluetooth = useCallback(async () => {
+    if (connectedDevice) {
+      try {
+        await connectedDevice.gatt.disconnect();
+      } catch (err) {
+        console.error(err);
+      }
+      setConnectedDevice(null);
+      setHeartRate(null);
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const device = await (navigator as any).bluetooth.requestDevice({
+        filters: [{ services: ["heart_rate"] }],
+      });
+
+      const server = await device.gatt?.connect();
+      if (!server) throw new Error("GATT server connection failed");
+
+      const service = await server.getPrimaryService("heart_rate");
+      const characteristic = await service.getCharacteristic("heart_rate_measurement");
+
+      await characteristic.startNotifications();
+
+      characteristic.addEventListener("characteristicvaluechanged", (event: any) => {
+        const value = event.target.value;
+        const flags = value.getUint8(0);
+        const rate16Bits = flags & 0x01;
+        let hr = 0;
+        if (rate16Bits) {
+          hr = value.getUint16(1, true);
+        } else {
+          hr = value.getUint8(1);
+        }
+
+        setHeartRate(hr);
+        setHeartRates((prev) => [...prev, hr]);
+      });
+
+      device.addEventListener("gattserverdisconnected", () => {
+        setHeartRate(null);
+        setConnectedDevice(null);
+      });
+
+      setConnectedDevice(device);
+    } catch (err) {
+      console.error("Bluetooth connection error:", err);
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [connectedDevice]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -249,16 +316,40 @@ function snapToDumbbellWeight(target: number): number {
     });
 
     setProgressionsApplied(applied);
-    completeWorkout();
+
+    const maxHr = heartRates.length > 0 ? Math.max(...heartRates) : undefined;
+    const avgHr = heartRates.length > 0 ? Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length) : undefined;
+
+    // Disconnect bluetooth if connected
+    if (connectedDevice) {
+      try {
+        connectedDevice.gatt.disconnect();
+      } catch (err) {
+        console.error(err);
+      }
+      setConnectedDevice(null);
+      setHeartRate(null);
+    }
+
+    completeWorkout(undefined, avgHr, maxHr);
     setShowSummary(true);
-  }, [activeWorkout, activePlan, currentPlanDay, updatePlanExercise, completeWorkout, exercises, progressionsApplied]);
+  }, [activeWorkout, activePlan, currentPlanDay, updatePlanExercise, completeWorkout, exercises, progressionsApplied, heartRates, connectedDevice]);
 
   const handleCancelWorkout = useCallback(() => {
     if (window.confirm("Workout wirklich abbrechen? Alle Daten gehen verloren.")) {
+      if (connectedDevice) {
+        try {
+          connectedDevice.gatt.disconnect();
+        } catch (err) {
+          console.error(err);
+        }
+        setConnectedDevice(null);
+        setHeartRate(null);
+      }
       cancelWorkout();
       setSelectedDay(null);
     }
-  }, [cancelWorkout]);
+  }, [cancelWorkout, connectedDevice]);
 
   const handleCloseSummary = useCallback(() => {
     setShowSummary(false);
@@ -368,9 +459,41 @@ function snapToDumbbellWeight(target: number): number {
           <XCircle className="w-5 h-5" />
           <span className="text-sm">Abbrechen</span>
         </button>
-        <div className="flex items-center gap-2 text-[var(--muted)]">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm font-mono">{formatTime(elapsedTime)}</span>
+        <div className="flex items-center gap-2">
+          {/* Heart Rate Widget */}
+          {bluetoothSupported && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleToggleBluetooth}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                connectedDevice
+                  ? "bg-red-500/10 border-red-500/30 text-red-500 shadow-md shadow-red-500/5"
+                  : isConnecting
+                  ? "bg-zinc-800 border-zinc-700 text-zinc-400"
+                  : "bg-white/[0.03] border-white/[0.06] text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+              }`}
+            >
+              <motion.span
+                animate={connectedDevice ? { scale: [1, 1.25, 1] } : {}}
+                transition={connectedDevice ? { repeat: Infinity, duration: 0.8, ease: "easeInOut" } : {}}
+                className="text-xs"
+              >
+                ❤️
+              </motion.span>
+              <span>
+                {connectedDevice
+                  ? `${heartRate !== null ? heartRate : "--"} bpm`
+                  : isConnecting
+                  ? "Verbinden..."
+                  : "Uhr koppeln"}
+              </span>
+            </motion.button>
+          )}
+
+          <div className="flex items-center gap-1.5 text-[var(--muted)] bg-white/[0.02] border border-white/[0.04] px-3 py-1.5 rounded-full">
+            <Clock className="w-3.5 h-3.5" />
+            <span className="text-xs font-mono">{formatTime(elapsedTime)}</span>
+          </div>
         </div>
       </motion.div>
 

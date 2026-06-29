@@ -94,6 +94,8 @@ export interface WorkoutSession {
   completedAt?: string; // ISO timestamp
   exercises: WorkoutExercise[];
   notes?: string;
+  avgHeartRate?: number;
+  maxHeartRate?: number;
 }
 
 export interface RestTimerConfig {

@@ -97,7 +97,15 @@ export default function WorkoutSummary({
       : Date.now();
     const durationMin = Math.round((end - start) / 60000);
 
-    return { totalSets, totalReps, totalVolume, durationMin, exerciseDetails };
+    return {
+      totalSets,
+      totalReps,
+      totalVolume,
+      durationMin,
+      exerciseDetails,
+      avgHeartRate: session.avgHeartRate,
+      maxHeartRate: session.maxHeartRate,
+    };
   }, [session, exercises]);
 
   const confettiParticles = useMemo(
@@ -206,6 +214,24 @@ export default function WorkoutSummary({
                 delay={0.25}
               />
             </div>
+
+            {/* Heart Rate Stats */}
+            {stats.avgHeartRate && (
+              <div className="mt-4 grid grid-cols-2 gap-3 bg-red-500/[0.03] border border-red-500/10 p-3 rounded-2xl">
+                <div className="text-center">
+                  <span className="text-[10px] text-zinc-500 block">Ø Puls</span>
+                  <span className="text-sm font-bold text-red-400 font-mono">
+                    ❤️ {stats.avgHeartRate} bpm
+                  </span>
+                </div>
+                <div className="text-center border-l border-white/[0.05]">
+                  <span className="text-[10px] text-zinc-500 block">Max Puls</span>
+                  <span className="text-sm font-bold text-red-400 font-mono">
+                    ⚡ {stats.maxHeartRate} bpm
+                  </span>
+                </div>
+              </div>
+            )}
             
             {/* Progressions */}
             {progressions && progressions.length > 0 && (
