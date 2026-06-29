@@ -15,6 +15,10 @@ export const metadata: Metadata = {
     "Persönliches Fitness-Tracking für dein Home Gym. Trainiere smart mit Kurzhanteln, Klimmzugstange und Eigengewicht.",
   keywords: ["fitness", "tracker", "home gym", "workout", "training"],
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
