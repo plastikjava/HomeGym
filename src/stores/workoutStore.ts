@@ -93,16 +93,31 @@ export const useWorkoutStore = create<WorkoutStore>()(
         set({
           activeWorkout: {
             ...activeWorkout,
-            exercises: activeWorkout.exercises.map((ex) =>
-              ex.exerciseId === exerciseId
-                ? {
-                    ...ex,
-                    sets: ex.sets.map((s) =>
-                      s.id === setId ? { ...s, ...updates } : s
-                    ),
-                  }
-                : ex
-            ),
+            exercises: activeWorkout.exercises.map((ex) => {
+              if (ex.exerciseId !== exerciseId) return ex;
+
+              const targetIndex = ex.sets.findIndex((s) => s.id === setId);
+              if (targetIndex === -1) return ex;
+
+              const updatedSet = { ...ex.sets[targetIndex]!, ...updates };
+
+              // If weight is being updated, propagate it to subsequent uncompleted sets in the exercise
+              const newSets = ex.sets.map((s, idx) => {
+                if (idx === targetIndex) {
+                  return updatedSet;
+                }
+                // Propagate to subsequent sets (idx > targetIndex) that are not completed
+                if (idx > targetIndex && !s.completed && updates.weight !== undefined) {
+                  return { ...s, weight: updates.weight };
+                }
+                return s;
+              });
+
+              return {
+                ...ex,
+                sets: newSets,
+              };
+            }),
           },
         });
       },

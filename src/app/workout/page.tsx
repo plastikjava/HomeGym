@@ -77,6 +77,13 @@ export default function WorkoutPage() {
     selectedDay ||
     activePlan?.days.find((d) => d.id === activeWorkout?.planDayId);
 
+function snapToDumbbellWeight(target: number): number {
+  const allowed = [0, 1.5, 3, 6, 7, 8, 9, 11, 12, 13, 14, 16, 18];
+  return allowed.reduce((prev, curr) => 
+    Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev
+  );
+}
+
   const handleStartWorkout = useCallback(
     (day: PlanDay) => {
       if (!activePlan) return;
@@ -86,9 +93,54 @@ export default function WorkoutPage() {
         const weight = pe.targetWeight ?? 0;
 
         const sets: WorkoutSet[] = [];
+
+        // Check if this exercise needs warmup
+        const needsWarmup = [
+          'floor-press', 'overhead-press', 'pull-up', 
+          'glute-bridge', 'hip-thrust', 'single-arm-row'
+        ].includes(pe.exerciseId);
+
+        if (needsWarmup) {
+          if (pe.exerciseId === 'pull-up') {
+            sets.push({
+              id: generateId() + '-w1',
+              reps: 10,
+              weight: 0,
+              type: 'warmup',
+              completed: false,
+            });
+            sets.push({
+              id: generateId() + '-w2',
+              reps: 5,
+              weight: 0,
+              type: 'warmup',
+              completed: false,
+            });
+          } else {
+            const w1Weight = snapToDumbbellWeight(weight * 0.5);
+            const w2Weight = snapToDumbbellWeight(weight * 0.7);
+
+            sets.push({
+              id: generateId() + '-w1',
+              reps: 10,
+              weight: w1Weight,
+              type: 'warmup',
+              completed: false,
+            });
+            sets.push({
+              id: generateId() + '-w2',
+              reps: 5,
+              weight: w2Weight,
+              type: 'warmup',
+              completed: false,
+            });
+          }
+        }
+
+        // Add regular target working sets
         for (let i = 0; i < pe.targetSets; i++) {
           sets.push({
-            id: generateId(),
+            id: generateId() + `-r${i}`,
             reps,
             weight,
             type: "working",
