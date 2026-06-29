@@ -23,6 +23,8 @@ interface SettingsStore {
   setRestTimer: (config: Partial<{ warmupSeconds: number; workingSeconds: number }>) => void;
   setAvailableEquipment: (equipment: EquipmentType[]) => void;
   toggleEquipment: (equipment: EquipmentType) => void;
+  setGoogleClientId: (id: string) => void;
+  setLastGoogleSync: (date: string) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -66,6 +68,14 @@ export const useSettingsStore = create<SettingsStore>()(
             settings: { ...state.settings, availableEquipment: updated },
           };
         }),
+      setGoogleClientId: (id) =>
+        set((state) => ({
+          settings: { ...state.settings, googleClientId: id },
+        })),
+      setLastGoogleSync: (date) =>
+        set((state) => ({
+          settings: { ...state.settings, lastGoogleSync: date },
+        })),
     }),
     {
       name: 'homegym-settings',

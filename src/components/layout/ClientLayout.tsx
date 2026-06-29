@@ -26,6 +26,52 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     initExercises();
     initPlans();
 
+    // Intercept Google OAuth redirects
+    if (window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get("access_token");
+
+      if (accessToken) {
+        // Clean URL immediately
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        const action = sessionStorage.getItem("google_drive_sync_action") || "backup";
+        sessionStorage.removeItem("google_drive_sync_action");
+
+        import("@/lib/googleDrive").then(async ({ uploadBackupToGoogleDrive, downloadBackupFromGoogleDrive }) => {
+          if (action === "backup") {
+            const backupData = {
+              exercises: localStorage.getItem("homegym-exercises"),
+              plans: localStorage.getItem("homegym-plans"),
+              settings: localStorage.getItem("homegym-settings"),
+              workouts: localStorage.getItem("homegym-workouts"),
+            };
+            const fileContent = JSON.stringify(backupData);
+            const success = await uploadBackupToGoogleDrive(accessToken, fileContent);
+            if (success) {
+              useSettingsStore.getState().setLastGoogleSync(new Date().toISOString());
+              alert("Erfolgreich in Google Drive gesichert!");
+            } else {
+              alert("Fehler beim Sichern in Google Drive.");
+            }
+          } else if (action === "restore") {
+            const backup = await downloadBackupFromGoogleDrive(accessToken);
+            if (backup) {
+              if (backup.exercises) localStorage.setItem("homegym-exercises", backup.exercises);
+              if (backup.plans) localStorage.setItem("homegym-plans", backup.plans);
+              if (backup.settings) localStorage.setItem("homegym-settings", backup.settings);
+              if (backup.workouts) localStorage.setItem("homegym-workouts", backup.workouts);
+              alert("Daten erfolgreich aus Google Drive geladen! App lädt neu...");
+              window.location.reload();
+            } else {
+              alert("Kein Backup auf Google Drive gefunden oder Fehler beim Laden.");
+            }
+          }
+        });
+      }
+    }
+
     setMounted(true);
   }, [initExercises, initPlans]);
 

@@ -105,6 +105,8 @@ export interface UserSettings {
   theme: 'dark' | 'light';
   restTimer: RestTimerConfig;
   availableEquipment: EquipmentType[];
+  googleClientId?: string;
+  lastGoogleSync?: string;
 }
 
 export const CATEGORY_COLORS: Record<string, string> = {
