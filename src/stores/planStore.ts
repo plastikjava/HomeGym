@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { WorkoutPlan, PlanDay, PlanExercise } from '@/types';
-import { default3Split, defaultSBSHypertrophy } from '@/data/defaultPlans';
+import { defaultSBSHypertrophy } from '@/data/defaultPlans';
 
 interface PlanStore {
   plans: WorkoutPlan[];
@@ -26,19 +26,19 @@ export const usePlanStore = create<PlanStore>()(
       activePlanId: null,
       initialized: false,
       initializePlans: () => {
-        const currentPlans = get().plans;
-        if (get().initialized && currentPlans.length > 0) {
-          const hasSBS = currentPlans.some((p) => p.id === 'sbs-hypertrophy');
-          if (!hasSBS) {
-            set({ plans: [...currentPlans, defaultSBSHypertrophy] });
-          }
-        } else {
-          set({
-            plans: [default3Split, defaultSBSHypertrophy],
-            activePlanId: default3Split.id,
-            initialized: true,
-          });
-        }
+        const currentPlans = get().plans.filter((p) => p.id !== 'default-3split');
+        const hasSBS = currentPlans.some((p) => p.id === 'sbs-hypertrophy');
+        const updatedPlans = hasSBS ? currentPlans : [...currentPlans, defaultSBSHypertrophy];
+        
+        const activePlanId = get().activePlanId === 'default-3split' || !get().activePlanId
+          ? defaultSBSHypertrophy.id
+          : get().activePlanId;
+
+        set({
+          plans: updatedPlans,
+          activePlanId: activePlanId,
+          initialized: true,
+        });
       },
       addPlan: (plan) =>
         set((state) => ({ plans: [...state.plans, plan] })),
