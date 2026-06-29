@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, CheckCircle2, Clock, XCircle } from "lucide-react";
@@ -58,6 +58,8 @@ export default function WorkoutPage() {
   const [bluetoothSupported, setBluetoothSupported] = useState(false);
   const [connectedDevice, setConnectedDevice] = useState<any>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+
+  const autoConnectRef = useRef<() => Promise<void>>(undefined);
 
   useEffect(() => {
     if (typeof navigator !== "undefined" && (navigator as any).bluetooth) {
@@ -119,56 +121,112 @@ export default function WorkoutPage() {
     }
   }, [connectedDevice]);
 
-  // Auto-connect to previously paired Bluetooth heart rate devices when workout starts
-  useEffect(() => {
+  // Auto-connect function
+  const autoConnect = useCallback(async () => {
     if (!bluetoothSupported || !activeWorkout || connectedDevice || isConnecting) return;
 
-    const autoConnect = async () => {
-      try {
-        const devices = await (navigator as any).bluetooth.getDevices();
-        const hrDevice = devices[0]; // Connect to the first already authorized device
+    try {
+      const devices = await (navigator as any).bluetooth.getDevices();
+      const hrDevice = devices[0]; // Connect to the first already authorized device
 
-        if (hrDevice) {
-          setIsConnecting(true);
-          const server = await hrDevice.gatt.connect();
-          const service = await server.getPrimaryService("heart_rate");
-          const characteristic = await service.getCharacteristic("heart_rate_measurement");
+      if (hrDevice) {
+        setIsConnecting(true);
+        const server = await hrDevice.gatt.connect();
+        const service = await server.getPrimaryService("heart_rate");
+        const characteristic = await service.getCharacteristic("heart_rate_measurement");
 
-          await characteristic.startNotifications();
+        await characteristic.startNotifications();
 
-          characteristic.addEventListener("characteristicvaluechanged", (event: any) => {
-            const value = event.target.value;
-            const flags = value.getUint8(0);
-            const rate16Bits = flags & 0x01;
-            let hr = 0;
-            if (rate16Bits) {
-              hr = value.getUint16(1, true);
-            } else {
-              hr = value.getUint8(1);
-            }
+        characteristic.addEventListener("characteristicvaluechanged", (event: any) => {
+          const value = event.target.value;
+          const flags = value.getUint8(0);
+          const rate16Bits = flags & 0x01;
+          let hr = 0;
+          if (rate16Bits) {
+            hr = value.getUint16(1, true);
+          } else {
+            hr = value.getUint8(1);
+          }
 
-            setHeartRate(hr);
-            setHeartRates((prev) => [...prev, hr]);
-          });
+          setHeartRate(hr);
+          setHeartRates((prev) => [...prev, hr]);
+        });
 
-          hrDevice.addEventListener("gattserverdisconnected", () => {
-            setHeartRate(null);
-            setConnectedDevice(null);
-          });
+        hrDevice.addEventListener("gattserverdisconnected", () => {
+          setHeartRate(null);
+          setConnectedDevice(null);
+        });
 
-          setConnectedDevice(hrDevice);
+        setConnectedDevice(hrDevice);
+      }
+    } catch (err) {
+      console.warn("Auto-connect to Bluetooth device failed:", err);
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [bluetoothSupported, activeWorkout, connectedDevice, isConnecting]);
+
+  // Save autoConnect in ref to expose to visibility listener without dependency loops
+  useEffect(() => {
+    autoConnectRef.current = autoConnect;
+  }, [autoConnect]);
+
+  // Initial trigger of autoConnect on workout page mount
+  useEffect(() => {
+    if (!bluetoothSupported || !activeWorkout) return;
+    const timeout = setTimeout(() => {
+      if (autoConnectRef.current) autoConnectRef.current();
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [bluetoothSupported, activeWorkout]);
+
+  // Screen Wake Lock & Tab Visibility Reconnection Handler
+  useEffect(() => {
+    if (!activeWorkout) return;
+
+    let lock: any = null;
+
+    const requestLock = async () => {
+      if (typeof navigator !== "undefined" && (navigator as any).wakeLock) {
+        try {
+          lock = await (navigator as any).wakeLock.request("screen");
+        } catch (err) {
+          console.warn("Wake Lock request failed:", err);
         }
-      } catch (err) {
-        console.warn("Auto-connect to Bluetooth device failed:", err);
-      } finally {
-        setIsConnecting(false);
       }
     };
 
-    // Delay slightly to let the store/layout mount and rehydrate fully
-    const timeout = setTimeout(autoConnect, 1000);
-    return () => clearTimeout(timeout);
-  }, [bluetoothSupported, activeWorkout, connectedDevice, isConnecting]);
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        // Re-request Screen Wake Lock
+        if (!lock) {
+          await requestLock();
+        }
+        // Auto-reconnect Bluetooth HR sensor
+        if (autoConnectRef.current) {
+          autoConnectRef.current();
+        }
+      } else {
+        // Tab went background, release screen lock to save system resources
+        if (lock) {
+          try {
+            await lock.release();
+          } catch (e) {}
+          lock = null;
+        }
+      }
+    };
+
+    requestLock();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (lock) {
+        lock.release();
+      }
+    };
+  }, [activeWorkout]);
 
   useEffect(() => {
     setMounted(true);
