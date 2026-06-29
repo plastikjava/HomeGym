@@ -119,6 +119,57 @@ export default function WorkoutPage() {
     }
   }, [connectedDevice]);
 
+  // Auto-connect to previously paired Bluetooth heart rate devices when workout starts
+  useEffect(() => {
+    if (!bluetoothSupported || !activeWorkout || connectedDevice || isConnecting) return;
+
+    const autoConnect = async () => {
+      try {
+        const devices = await (navigator as any).bluetooth.getDevices();
+        const hrDevice = devices[0]; // Connect to the first already authorized device
+
+        if (hrDevice) {
+          setIsConnecting(true);
+          const server = await hrDevice.gatt.connect();
+          const service = await server.getPrimaryService("heart_rate");
+          const characteristic = await service.getCharacteristic("heart_rate_measurement");
+
+          await characteristic.startNotifications();
+
+          characteristic.addEventListener("characteristicvaluechanged", (event: any) => {
+            const value = event.target.value;
+            const flags = value.getUint8(0);
+            const rate16Bits = flags & 0x01;
+            let hr = 0;
+            if (rate16Bits) {
+              hr = value.getUint16(1, true);
+            } else {
+              hr = value.getUint8(1);
+            }
+
+            setHeartRate(hr);
+            setHeartRates((prev) => [...prev, hr]);
+          });
+
+          hrDevice.addEventListener("gattserverdisconnected", () => {
+            setHeartRate(null);
+            setConnectedDevice(null);
+          });
+
+          setConnectedDevice(hrDevice);
+        }
+      } catch (err) {
+        console.warn("Auto-connect to Bluetooth device failed:", err);
+      } finally {
+        setIsConnecting(false);
+      }
+    };
+
+    // Delay slightly to let the store/layout mount and rehydrate fully
+    const timeout = setTimeout(autoConnect, 1000);
+    return () => clearTimeout(timeout);
+  }, [bluetoothSupported, activeWorkout, connectedDevice, isConnecting]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
