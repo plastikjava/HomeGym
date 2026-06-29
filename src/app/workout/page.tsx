@@ -450,7 +450,7 @@ function snapToDumbbellWeight(target: number): number {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-4"
+        className="sticky top-16 z-30 flex items-center justify-between py-3 px-4 -mx-4 bg-[var(--background)]/90 backdrop-blur-xl border-b border-zinc-200/50 dark:border-zinc-800/50 mb-4"
       >
         <button
           onClick={handleCancelWorkout}
