@@ -7,6 +7,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass-through fetch handler (required for Chrome PWA detection)
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return new Response(
+        'Du bist offline. HomeGym funktioniert am besten mit aktiver Verbindung.',
+        {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        }
+      );
+    })
+  );
 });
