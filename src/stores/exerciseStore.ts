@@ -35,8 +35,13 @@ export const useExerciseStore = create<ExerciseStore>()(
           const missingDefaults = defaultExercises.filter(e => !currentIds.has(e.id));
           
           const updated = withoutWger.map(e => {
-            if (defaultIds.has(e.id) && e.gifUrl && e.gifUrl.includes("exercisedb.dev")) {
-              return { ...e, gifUrl: undefined };
+            const defaultExercise = defaultExercises.find(d => d.id === e.id);
+            if (defaultExercise) {
+              return {
+                ...e,
+                videoUrl: defaultExercise.videoUrl || e.videoUrl,
+                gifUrl: e.gifUrl && e.gifUrl.includes("exercisedb.dev") ? undefined : e.gifUrl
+              };
             }
             return e;
           });

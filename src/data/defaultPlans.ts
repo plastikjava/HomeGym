@@ -11,6 +11,7 @@ export const defaultExercises: Exercise[] = [
     category: 'legs',
     primaryMuscles: ['Glutes', 'Hamstrings'],
     equipment: ['adjustable_dumbbells', 'bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=tqp5XQPpTxY',
     isCustom: false,
   },
   {
@@ -204,6 +205,7 @@ export const defaultExercises: Exercise[] = [
     category: 'arms',
     primaryMuscles: ['Triceps'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=noKoND5ghI4',
     isCustom: false,
   },
   {
