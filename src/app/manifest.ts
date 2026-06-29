@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'HomeGym – Personal Fitness Tracker',
-    short_name: 'HomeGym',
+    name: 'HomeGym Tracker',
+    short_name: 'HomeGym Tracker',
     id: '/',
     description: 'Ersetze Caliber durch dein eigenes, individuell anpassbares Fitness-Tracking.',
     start_url: '/',
