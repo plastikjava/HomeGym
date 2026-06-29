@@ -22,5 +22,21 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/png',
       },
     ],
+    screenshots: [
+      {
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        form_factor: 'wide',
+        label: 'HomeGym Desktop',
+      },
+      {
+        src: '/icon-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        form_factor: 'narrow',
+        label: 'HomeGym Mobile',
+      },
+    ],
   };
 }
