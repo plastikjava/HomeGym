@@ -283,3 +283,84 @@ export function getEstimatedWorkoutDuration(exercises: { exerciseId: string; tar
   });
   return Math.round(totalSeconds / 60);
 }
+
+export const PROGRESSION_STEPS = [
+  { sets: 3, reps: 8 },
+  { sets: 4, reps: 8 },
+  { sets: 5, reps: 8 },
+  { sets: 3, reps: 10 },
+  { sets: 4, reps: 10 },
+  { sets: 5, reps: 10 },
+  { sets: 3, reps: 12 },
+  { sets: 4, reps: 12 },
+  { sets: 5, reps: 12 }
+];
+
+export const ALLOWED_DUMBBELL_WEIGHTS = [0, 1.5, 3, 6, 7, 8, 9, 11, 12, 13, 14, 16, 18];
+
+export function getNextProgressionStep(currentSets: number, currentReps: number, currentWeight: number) {
+  const currentIndex = PROGRESSION_STEPS.findIndex(
+    (s) => s.sets === currentSets && s.reps === currentReps
+  );
+  
+  if (currentIndex === -1) {
+    return { sets: currentSets, reps: currentReps, weight: currentWeight, weightIncreased: false };
+  }
+  
+  if (currentIndex === PROGRESSION_STEPS.length - 1) {
+    const nextWeight = getNextDumbbellWeight(currentWeight);
+    return {
+      sets: 3,
+      reps: 8,
+      weight: nextWeight,
+      weightIncreased: nextWeight > currentWeight
+    };
+  }
+  
+  const nextStep = PROGRESSION_STEPS[currentIndex + 1]!;
+  return {
+    sets: nextStep.sets,
+    reps: nextStep.reps,
+    weight: currentWeight,
+    weightIncreased: false
+  };
+}
+
+export function getPreviousProgressionStep(currentSets: number, currentReps: number, currentWeight: number) {
+  const currentIndex = PROGRESSION_STEPS.findIndex(
+    (s) => s.sets === currentSets && s.reps === currentReps
+  );
+  
+  if (currentIndex === -1) {
+    return { sets: currentSets, reps: currentReps, weight: currentWeight, weightDecreased: false };
+  }
+  
+  if (currentIndex === 0) {
+    const prevWeight = getPreviousDumbbellWeight(currentWeight);
+    return {
+      sets: 5,
+      reps: 12,
+      weight: prevWeight,
+      weightDecreased: prevWeight < currentWeight
+    };
+  }
+  
+  const prevStep = PROGRESSION_STEPS[currentIndex - 1]!;
+  return {
+    sets: prevStep.sets,
+    reps: prevStep.reps,
+    weight: currentWeight,
+    weightDecreased: false
+  };
+}
+
+function getNextDumbbellWeight(weight: number): number {
+  const step = ALLOWED_DUMBBELL_WEIGHTS.find((w) => w > weight);
+  return step !== undefined ? step : weight;
+}
+
+function getPreviousDumbbellWeight(weight: number): number {
+  const reverseSteps = [...ALLOWED_DUMBBELL_WEIGHTS].reverse();
+  const step = reverseSteps.find((w) => w < weight);
+  return step !== undefined ? step : weight;
+}

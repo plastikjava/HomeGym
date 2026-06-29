@@ -49,6 +49,7 @@ export interface PlanExercise {
   targetSets: number;
   targetReps: string; // e.g. '10-12' or '45-60s' or 'max'
   notes?: string;
+  targetWeight?: number; // in kg
 }
 
 export interface PlanDay {

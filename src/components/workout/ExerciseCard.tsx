@@ -17,7 +17,8 @@ import {
 } from '@/types';
 import SetInput from './SetInput';
 import { useExerciseStore } from '@/stores/exerciseStore';
-import { fetchExerciseGif, getYouTubeEmbedUrl } from '@/lib/api';
+import { usePlanStore } from '@/stores/planStore';
+import { fetchExerciseGif, getYouTubeEmbedUrl, PROGRESSION_STEPS, ALLOWED_DUMBBELL_WEIGHTS } from '@/lib/api';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -29,9 +30,8 @@ interface ExerciseCardProps {
   onRemoveSet: (setId: string) => void;
 }
 
-const ALLOWED_DUMBBELL_WEIGHTS = [1.5, 3, 6, 7, 8, 9, 11, 12, 13, 14, 16, 18];
 function snapToDumbbellWeight(target: number): number {
-  return ALLOWED_DUMBBELL_WEIGHTS.reduce((prev, curr) => 
+  return ALLOWED_DUMBBELL_WEIGHTS.filter(w => w > 0).reduce((prev, curr) => 
     Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev
   );
 }
@@ -47,6 +47,7 @@ export default function ExerciseCard({
 }: ExerciseCardProps) {
   const [expanded, setExpanded] = useState(true);
   const [showDemo, setShowDemo] = useState(false);
+  const [showProgressionMenu, setShowProgressionMenu] = useState(false);
   const [gifUrl, setGifUrl] = useState<string | null>(exercise.gifUrl || null);
   const [loadingGif, setLoadingGif] = useState(false);
   const updateExercise = useExerciseStore((s) => s.updateExercise);
@@ -187,6 +188,9 @@ export default function ExerciseCard({
         <div className="flex items-center gap-1">
           <Target size={12} className="text-zinc-500" />
           <span>Ziel: {planExercise.targetSets} × {planExercise.targetReps}</span>
+          {planExercise.targetWeight !== undefined && planExercise.targetWeight > 0 && (
+            <span className="ml-1 font-semibold text-blue-400">({planExercise.targetWeight} kg)</span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <Timer size={12} className="text-zinc-500" />
@@ -197,7 +201,127 @@ export default function ExerciseCard({
             – {planExercise.notes}
           </span>
         )}
+        
+        {/* Adjust Step Button */}
+        {!['wall-sit', 'plank'].includes(exercise.id) && (
+          <button
+            type="button"
+            onClick={() => setShowProgressionMenu(!showProgressionMenu)}
+            className="ml-auto text-blue-400 hover:text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20"
+          >
+            Progression anpassen
+          </button>
+        )}
       </div>
+
+      {/* Progression Adjustment Menu */}
+      <AnimatePresence>
+        {showProgressionMenu && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-t border-white/[0.05] bg-black/10 px-4 py-3 text-xs"
+          >
+            <div className="space-y-3">
+              {/* Level Selector */}
+              <div>
+                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+                  Progression-Stufe wählen (SBS Novice):
+                </p>
+                <div className="grid grid-cols-3 gap-1">
+                  {PROGRESSION_STEPS.map((step) => {
+                    const isActive = planExercise.targetSets === step.sets && parseInt(planExercise.targetReps) === step.reps;
+                    return (
+                      <button
+                        key={`${step.sets}x${step.reps}`}
+                        type="button"
+                        onClick={() => {
+                          const activePlanId = usePlanStore.getState().activePlanId;
+                          const activeWorkout = useWorkoutStore.getState().activeWorkout;
+                          if (activePlanId && activeWorkout) {
+                            usePlanStore.getState().updatePlanExercise(
+                              activePlanId,
+                              activeWorkout.planDayId,
+                              exercise.id,
+                              { targetSets: step.sets, targetReps: String(step.reps) }
+                            );
+                          }
+                        }}
+                        className={`py-1 rounded text-center font-medium transition-colors ${
+                          isActive
+                            ? 'bg-blue-500 text-white font-bold'
+                            : 'bg-white/[0.05] text-zinc-400 hover:bg-white/[0.1]'
+                        }`}
+                      >
+                        {step.sets} × {step.reps}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Weight Selector */}
+              {planExercise.targetWeight !== undefined && (
+                <div>
+                  <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+                    Zielgewicht (Hantelstufe):
+                  </p>
+                  <div className="flex items-center justify-between bg-white/[0.03] rounded-xl px-3 py-1.5 border border-white/[0.05]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentW = planExercise.targetWeight ?? 0;
+                        const idx = ALLOWED_DUMBBELL_WEIGHTS.indexOf(currentW);
+                        const nextIdx = idx > 0 ? idx - 1 : 0;
+                        const nextWeight = ALLOWED_DUMBBELL_WEIGHTS[nextIdx]!;
+                        const activePlanId = usePlanStore.getState().activePlanId;
+                        const activeWorkout = useWorkoutStore.getState().activeWorkout;
+                        if (activePlanId && activeWorkout) {
+                          usePlanStore.getState().updatePlanExercise(
+                            activePlanId,
+                            activeWorkout.planDayId,
+                            exercise.id,
+                            { targetWeight: nextWeight }
+                          );
+                        }
+                      }}
+                      className="w-8 h-8 rounded-lg bg-white/[0.05] flex items-center justify-center font-bold text-zinc-300 hover:bg-white/[0.1] text-sm"
+                    >
+                      -
+                    </button>
+                    <span className="font-mono text-sm text-zinc-200 font-bold">
+                      {planExercise.targetWeight} kg
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentW = planExercise.targetWeight ?? 0;
+                        const idx = ALLOWED_DUMBBELL_WEIGHTS.indexOf(currentW);
+                        const nextIdx = idx !== -1 && idx < ALLOWED_DUMBBELL_WEIGHTS.length - 1 ? idx + 1 : idx;
+                        const nextWeight = ALLOWED_DUMBBELL_WEIGHTS[nextIdx]!;
+                        const activePlanId = usePlanStore.getState().activePlanId;
+                        const activeWorkout = useWorkoutStore.getState().activeWorkout;
+                        if (activePlanId && activeWorkout) {
+                          usePlanStore.getState().updatePlanExercise(
+                            activePlanId,
+                            activeWorkout.planDayId,
+                            exercise.id,
+                            { targetWeight: nextWeight }
+                          );
+                        }
+                      }}
+                      className="w-8 h-8 rounded-lg bg-white/[0.05] flex items-center justify-center font-bold text-zinc-300 hover:bg-white/[0.1] text-sm"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ─── Progress dots ──────────────────────────────────────── */}
       <div className="flex gap-1.5 px-4 pb-3">

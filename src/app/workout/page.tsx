@@ -12,7 +12,7 @@ import ExerciseCard from "@/components/workout/ExerciseCard";
 import RestTimer from "@/components/workout/RestTimer";
 import WorkoutSummary from "@/components/workout/WorkoutSummary";
 import type { WorkoutExercise, WorkoutSet, SetType, PlanDay } from "@/types";
-import { getEstimatedWorkoutDuration } from "@/lib/api";
+import { getEstimatedWorkoutDuration, getNextProgressionStep } from "@/lib/api";
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
@@ -30,6 +30,16 @@ export default function WorkoutPage() {
 
   const plans = usePlanStore((s) => s.plans);
   const activePlanId = usePlanStore((s) => s.activePlanId);
+  const updatePlanExercise = usePlanStore((s) => s.updatePlanExercise);
+  const [progressionsApplied, setProgressionsApplied] = useState<{
+    exerciseNameDe: string;
+    exerciseNameEn: string;
+    oldTarget: string;
+    newTarget: string;
+    oldWeight: number;
+    newWeight: number;
+    weightIncreased: boolean;
+  }[]>([]);
   const exercises = useExerciseStore((s) => s.exercises);
   const settings = useSettingsStore((s) => s.settings);
   const activeWorkout = useWorkoutStore((s) => s.activeWorkout);
@@ -63,15 +73,34 @@ export default function WorkoutPage() {
   };
 
   const activePlan = plans.find((p) => p.id === activePlanId);
+  const currentPlanDay =
+    selectedDay ||
+    activePlan?.days.find((d) => d.id === activeWorkout?.planDayId);
 
   const handleStartWorkout = useCallback(
     (day: PlanDay) => {
       if (!activePlan) return;
 
-      const workoutExercises: WorkoutExercise[] = day.exercises.map((pe) => ({
-        exerciseId: pe.exerciseId,
-        sets: [],
-      }));
+      const workoutExercises: WorkoutExercise[] = day.exercises.map((pe) => {
+        const reps = parseInt(pe.targetReps) || 8;
+        const weight = pe.targetWeight ?? 0;
+
+        const sets: WorkoutSet[] = [];
+        for (let i = 0; i < pe.targetSets; i++) {
+          sets.push({
+            id: generateId(),
+            reps,
+            weight,
+            type: "working",
+            completed: false,
+          });
+        }
+
+        return {
+          exerciseId: pe.exerciseId,
+          sets,
+        };
+      });
 
       startWorkout(activePlan.id, day.id, workoutExercises);
       setSelectedDay(day);
@@ -124,9 +153,53 @@ export default function WorkoutPage() {
   );
 
   const handleCompleteWorkout = useCallback(() => {
+    if (!activeWorkout || !activePlan || !currentPlanDay) return;
+
+    const applied: typeof progressionsApplied = [];
+
+    activeWorkout.exercises.forEach((loggedEx) => {
+      const pe = currentPlanDay.exercises.find((e) => e.exerciseId === loggedEx.exerciseId);
+      if (!pe) return;
+
+      const targetRepsNum = parseInt(pe.targetReps);
+      if (isNaN(targetRepsNum)) return; // Skip timed exercises like wall-sit or plank
+
+      const completedWorkingSets = loggedEx.sets.filter((s) => s.completed && s.type === "working");
+      
+      // Success condition: reached at least targetSets and met/exceeded targetReps in all of them
+      const completedTargetSetsCount = completedWorkingSets.length >= pe.targetSets;
+      const allSetsMetRepTarget = completedWorkingSets.length > 0 && completedWorkingSets.every((s) => s.reps >= targetRepsNum);
+
+      if (completedTargetSetsCount && allSetsMetRepTarget) {
+        // Find current weight (use first completed set weight or targetWeight)
+        const currentWeight = pe.targetWeight ?? (completedWorkingSets[0]?.weight || 0);
+        const nextStep = getNextProgressionStep(pe.targetSets, targetRepsNum, currentWeight);
+
+        // Update plan in store
+        updatePlanExercise(activePlan.id, activeWorkout.planDayId, pe.exerciseId, {
+          targetSets: nextStep.sets,
+          targetReps: String(nextStep.reps),
+          targetWeight: nextStep.weight,
+        });
+
+        // Get exercise metadata to show in summary
+        const exerciseMeta = exercises.find((e) => e.id === pe.exerciseId);
+        applied.push({
+          exerciseNameDe: exerciseMeta?.nameDe || pe.exerciseId,
+          exerciseNameEn: exerciseMeta?.nameEn || pe.exerciseId,
+          oldTarget: `${pe.targetSets} × ${pe.targetReps}`,
+          newTarget: `${nextStep.sets} × ${nextStep.reps}`,
+          oldWeight: currentWeight,
+          newWeight: nextStep.weight,
+          weightIncreased: nextStep.weightIncreased,
+        });
+      }
+    });
+
+    setProgressionsApplied(applied);
     completeWorkout();
     setShowSummary(true);
-  }, [completeWorkout]);
+  }, [activeWorkout, activePlan, currentPlanDay, updatePlanExercise, completeWorkout, exercises, progressionsApplied]);
 
   const handleCancelWorkout = useCallback(() => {
     if (window.confirm("Workout wirklich abbrechen? Alle Daten gehen verloren.")) {
@@ -151,6 +224,7 @@ export default function WorkoutPage() {
         session={lastSession}
         exercises={exercises}
         onClose={handleCloseSummary}
+        progressions={progressionsApplied}
       />
     );
   }
@@ -217,9 +291,6 @@ export default function WorkoutPage() {
   }
 
   // Active workout view
-  const currentPlanDay =
-    selectedDay ||
-    activePlan?.days.find((d) => d.id === activeWorkout.planDayId);
 
   const totalSets = activeWorkout.exercises.reduce(
     (t, e) => t + e.sets.length,

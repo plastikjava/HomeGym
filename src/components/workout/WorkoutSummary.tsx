@@ -16,6 +16,15 @@ interface WorkoutSummaryProps {
   session: WorkoutSession;
   exercises: Exercise[];
   onClose: () => void;
+  progressions?: {
+    exerciseNameDe: string;
+    exerciseNameEn: string;
+    oldTarget: string;
+    newTarget: string;
+    oldWeight: number;
+    newWeight: number;
+    weightIncreased: boolean;
+  }[];
 }
 
 // Simple confetti-like particles
@@ -49,6 +58,7 @@ export default function WorkoutSummary({
   session,
   exercises,
   onClose,
+  progressions,
 }: WorkoutSummaryProps) {
   const stats = useMemo(() => {
     let totalSets = 0;
@@ -196,6 +206,44 @@ export default function WorkoutSummary({
                 delay={0.25}
               />
             </div>
+            
+            {/* Progressions */}
+            {progressions && progressions.length > 0 && (
+              <div className="mt-5">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                  <span>⚡ Progression erreicht!</span>
+                </h3>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {progressions.map((prog, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.25 + i * 0.05 }}
+                      className="rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10 px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-zinc-200 truncate max-w-[180px]">
+                          {prog.exerciseNameEn}
+                        </span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.5 rounded">
+                          Level Up
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[11px] text-zinc-400">
+                        <span>
+                          {prog.oldTarget} ➔ <strong className="text-emerald-400">{prog.newTarget}</strong>
+                        </span>
+                        <span>
+                          {prog.oldWeight} kg ➔ <strong className="text-emerald-400">{prog.newWeight} kg</strong>
+                          {prog.weightIncreased && <span className="ml-1 text-[10px] font-bold text-emerald-300">🔥 +Gewicht!</span>}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Exercise breakdown */}
             <div className="mt-5">

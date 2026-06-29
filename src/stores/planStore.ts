@@ -17,6 +17,7 @@ interface PlanStore {
   removeDayFromPlan: (planId: string, dayId: string) => void;
   addExerciseToDay: (planId: string, dayId: string, exercise: PlanExercise) => void;
   removeExerciseFromDay: (planId: string, dayId: string, exerciseId: string) => void;
+  updatePlanExercise: (planId: string, dayId: string, exerciseId: string, updates: Partial<PlanExercise>) => void;
 }
 
 export const usePlanStore = create<PlanStore>()(
@@ -121,6 +122,29 @@ export const usePlanStore = create<PlanStore>()(
               : p
           ),
         })),
+        updatePlanExercise: (planId, dayId, exerciseId, updates) =>
+          set((state) => ({
+            plans: state.plans.map((p) =>
+              p.id === planId
+                ? {
+                    ...p,
+                    days: p.days.map((d) =>
+                      d.id === dayId
+                        ? {
+                            ...d,
+                            exercises: d.exercises.map((e) =>
+                              e.exerciseId === exerciseId
+                                ? { ...e, ...updates }
+                                : e
+                            ),
+                          }
+                        : d
+                    ),
+                    updatedAt: new Date().toISOString(),
+                  }
+                : p
+            ),
+          })),
     }),
     {
       name: 'homegym-plans',
