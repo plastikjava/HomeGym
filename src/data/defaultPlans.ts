@@ -23,6 +23,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Glutes', 'Hamstrings'],
     secondaryMuscles: ['Core'],
     equipment: ['adjustable_dumbbells', 'bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=_0APnBNNTfw',
     isCustom: false,
   },
   {
@@ -34,6 +35,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Quadriceps'],
     secondaryMuscles: ['Glutes'],
     equipment: ['bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=cWTZ8Am1Ee0',
     isCustom: false,
   },
   {
@@ -54,6 +56,7 @@ export const defaultExercises: Exercise[] = [
     category: 'legs',
     primaryMuscles: ['Calves'],
     equipment: ['adjustable_dumbbells', 'bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=Km0QS46bTEA',
     isCustom: false,
   },
   {
@@ -64,6 +67,7 @@ export const defaultExercises: Exercise[] = [
     category: 'core',
     primaryMuscles: ['Rectus Abdominis'],
     equipment: ['bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=qZq9bNk1owk',
     isCustom: false,
   },
   {
@@ -75,6 +79,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Core', 'Rectus Abdominis'],
     secondaryMuscles: ['Shoulders', 'Glutes'],
     equipment: ['bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=pvIjsG5Svck',
     isCustom: false,
   },
 
@@ -88,6 +93,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Latissimus Dorsi', 'Rhomboids'],
     secondaryMuscles: ['Biceps', 'Rear Deltoids'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=DMo3HJoawrU',
     isCustom: false,
   },
   {
@@ -98,6 +104,7 @@ export const defaultExercises: Exercise[] = [
     category: 'back',
     primaryMuscles: ['Rear Deltoids', 'Rhomboids'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=KlQf6K-1Bfc',
     isCustom: false,
   },
   {
@@ -109,6 +116,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Anterior Deltoids', 'Medial Deltoids'],
     secondaryMuscles: ['Triceps', 'Core'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=Did01dFR3Lk',
     isCustom: false,
   },
   {
@@ -119,6 +127,7 @@ export const defaultExercises: Exercise[] = [
     category: 'shoulders',
     primaryMuscles: ['Medial Deltoids'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=XPPfnSEATJA',
     isCustom: false,
   },
   {
@@ -140,6 +149,7 @@ export const defaultExercises: Exercise[] = [
     category: 'back',
     primaryMuscles: ['Erector Spinae', 'Glutes'],
     equipment: ['bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=LZoWdePF1NQ',
     isCustom: false,
   },
 
@@ -153,6 +163,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Pectoralis Major', 'Triceps'],
     secondaryMuscles: ['Anterior Deltoids'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=T0Y3OBF1bNI',
     isCustom: false,
   },
   {
@@ -163,6 +174,7 @@ export const defaultExercises: Exercise[] = [
     category: 'chest',
     primaryMuscles: ['Pectoralis Major'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=5jK8QhzvcDQ',
     isCustom: false,
   },
   {
@@ -175,6 +187,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Pectoralis Major', 'Triceps'],
     secondaryMuscles: ['Anterior Deltoids', 'Core'],
     equipment: ['bodyweight'],
+    videoUrl: 'https://www.youtube.com/watch?v=WDIpL0pjun0',
     isCustom: false,
   },
   {
@@ -185,6 +198,7 @@ export const defaultExercises: Exercise[] = [
     category: 'arms',
     primaryMuscles: ['Biceps'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=scZFlj11eck',
     isCustom: false,
   },
   {
@@ -195,6 +209,7 @@ export const defaultExercises: Exercise[] = [
     category: 'arms',
     primaryMuscles: ['Biceps', 'Brachioradialis'],
     equipment: ['adjustable_dumbbells'],
+    videoUrl: 'https://www.youtube.com/watch?v=P5sXHLmXmBM',
     isCustom: false,
   },
   {
@@ -217,6 +232,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Latissimus Dorsi', 'Biceps'],
     secondaryMuscles: ['Rhomboids', 'Trapezius'],
     equipment: ['pull_up_bar'],
+    videoUrl: 'https://www.youtube.com/watch?v=kCoCVLZvI8E',
     isCustom: false,
   },
 ];
