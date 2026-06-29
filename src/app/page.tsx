@@ -1,65 +1,104 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { usePlanStore } from "@/stores/planStore";
+import { useWorkoutStore } from "@/stores/workoutStore";
+import { useExerciseStore } from "@/stores/exerciseStore";
+import { NextWorkoutCard } from "@/components/dashboard/NextWorkoutCard";
+import { StatsOverview } from "@/components/dashboard/StatsOverview";
+import { RecentWorkouts } from "@/components/dashboard/RecentWorkouts";
+
+export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false);
+
+  const plans = usePlanStore((s) => s.plans);
+  const activePlanId = usePlanStore((s) => s.activePlanId);
+  const workoutHistory = useWorkoutStore((s) => s.workoutHistory);
+  const getWorkoutsThisWeek = useWorkoutStore((s) => s.getWorkoutsThisWeek);
+  const getCurrentStreak = useWorkoutStore((s) => s.getCurrentStreak);
+  const getTotalWorkouts = useWorkoutStore((s) => s.getTotalWorkouts);
+  const exercises = useExerciseStore((s) => s.exercises);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const activePlan = plans.find((p) => p.id === activePlanId);
+
+  // Determine next workout day based on last completed workout
+  const getNextDayIndex = (): number => {
+    if (!activePlan || workoutHistory.length === 0) return 0;
+
+    const lastWorkout = workoutHistory
+      .filter((w) => w.planId === activePlan.id && w.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())[0];
+
+    if (!lastWorkout) return 0;
+
+    const lastDayIndex = activePlan.days.findIndex((d) => d.id === lastWorkout.planDayId);
+    return (lastDayIndex + 1) % activePlan.days.length;
+  };
+
+  const nextDayIndex = getNextDayIndex();
+  const nextDay = activePlan?.days[nextDayIndex];
+
+  // Calculate total volume from all completed workouts
+  const totalVolume = workoutHistory.reduce((total, session) => {
+    return (
+      total +
+      session.exercises.reduce((exTotal, ex) => {
+        return (
+          exTotal +
+          ex.sets
+            .filter((s) => s.completed)
+            .reduce((setTotal, s) => setTotal + s.weight * s.reps, 0)
+        );
+      }, 0)
+    );
+  }, 0);
+
+  const workoutsThisWeek = getWorkoutsThisWeek().length;
+  const totalWorkouts = getTotalWorkouts();
+  const currentStreak = getCurrentStreak();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="px-4 pt-4 pb-8 max-w-lg mx-auto space-y-6">
+      {/* Greeting */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h1 className="text-2xl font-bold">
+          Hallo! <span className="wave inline-block">👋</span>
+        </h1>
+        <p className="text-[var(--muted)] text-sm mt-1">
+          Bereit für dein nächstes Training?
+        </p>
+      </motion.div>
+
+      {/* Stats Overview */}
+      <StatsOverview
+        workoutsThisWeek={workoutsThisWeek}
+        totalWorkouts={totalWorkouts}
+        currentStreak={currentStreak}
+        totalVolume={Math.round(totalVolume)}
+      />
+
+      {/* Next Workout Card */}
+      {activePlan && nextDay && (
+        <NextWorkoutCard
+          planDay={nextDay}
+          dayIndex={nextDayIndex}
+          planName={activePlan.name}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
+
+      {/* Recent Workouts */}
+      <RecentWorkouts workouts={workoutHistory} exercises={exercises} />
     </div>
   );
 }

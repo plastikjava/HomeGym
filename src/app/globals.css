@@ -1,26 +1,259 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ==========================================
+   HomeGym Design System
+   ========================================== */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --color-accent: #3b82f6;
+  --color-accent-light: #60a5fa;
+  --color-accent-dark: #2563eb;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ---------- Light Mode ---------- */
+:root {
+  --background: #f9fafb;
+  --foreground: #111827;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(229, 231, 235, 0.5);
+  --card-hover: rgba(255, 255, 255, 0.95);
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --muted: #6b7280;
+  --muted-light: #9ca3af;
+  --surface: #f3f4f6;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
+/* ---------- Dark Mode ---------- */
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card-bg: rgba(24, 24, 27, 0.8);
+  --card-border: rgba(39, 39, 42, 0.5);
+  --card-hover: rgba(24, 24, 27, 0.95);
+  --nav-bg: rgba(9, 9, 11, 0.9);
+  --muted: #a1a1aa;
+  --muted-light: #71717a;
+  --surface: #18181b;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+/* ---------- Base Styles ---------- */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter, 'Inter', system-ui, -apple-system, sans-serif);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-light);
+  border-radius: 4px;
+}
+
+/* ---------- Glassmorphism Cards ---------- */
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.glass-card:hover {
+  background: var(--card-hover);
+}
+
+.glass-nav {
+  background: var(--nav-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--card-border);
+}
+
+/* ---------- Gradient Text ---------- */
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa, #93c5fd);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ---------- Gradient Backgrounds ---------- */
+.gradient-hero {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.15), 
+    rgba(139, 92, 246, 0.1),
+    rgba(59, 130, 246, 0.05)
+  );
+}
+
+.dark .gradient-hero {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.2), 
+    rgba(139, 92, 246, 0.15),
+    rgba(59, 130, 246, 0.05)
+  );
+}
+
+/* ---------- Accent Button ---------- */
+.btn-accent {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+}
+
+.btn-accent:hover {
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-accent:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* ---------- Number Input Stepper ---------- */
+.stepper-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--foreground);
+  font-weight: 600;
+  transition: all 0.15s ease;
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  user-select: none;
+}
+
+.stepper-btn:hover {
+  background: var(--card-hover);
+}
+
+.stepper-btn:active {
+  transform: scale(0.92);
+}
+
+.stepper-value {
+  min-width: 3rem;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Category Colors ---------- */
+.cat-chest { --cat-color: #ef4444; }
+.cat-back { --cat-color: #3b82f6; }
+.cat-shoulders { --cat-color: #8b5cf6; }
+.cat-arms { --cat-color: #f59e0b; }
+.cat-legs { --cat-color: #22c55e; }
+.cat-core { --cat-color: #06b6d4; }
+.cat-cardio { --cat-color: #ec4899; }
+.cat-full_body { --cat-color: #14b8a6; }
+
+/* ---------- Timer Ring ---------- */
+.timer-ring {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.timer-ring-bg {
+  fill: none;
+  stroke: var(--surface);
+  stroke-width: 6;
+}
+
+.timer-ring-progress {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+/* ---------- Set Type Badges ---------- */
+.badge-warmup {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-working {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* ---------- Safe Areas (Mobile) ---------- */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.mb-bottom-nav {
+  margin-bottom: 5rem;
+}
+
+/* ---------- Animations ---------- */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--card-bg) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+/* ---------- Focus Styles ---------- */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input:focus, button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
