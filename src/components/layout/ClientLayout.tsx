@@ -26,13 +26,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     initExercises();
     initPlans();
 
-    // Register Service Worker for PWA installation
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => console.log('PWA ServiceWorker registered:', reg.scope))
-        .catch((err) => console.warn('PWA ServiceWorker registration failed:', err));
-    }
-
     setMounted(true);
   }, [initExercises, initPlans]);
 
