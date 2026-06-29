@@ -46,6 +46,7 @@ export const defaultExercises: Exercise[] = [
     category: 'legs',
     primaryMuscles: ['Hip Abductors', 'Glutes'],
     equipment: ['resistance_bands'],
+    videoUrl: 'https://www.youtube.com/watch?v=MYosRQfFs6A',
     isCustom: false,
   },
   {
@@ -139,6 +140,7 @@ export const defaultExercises: Exercise[] = [
     primaryMuscles: ['Rear Deltoids', 'External Rotators'],
     secondaryMuscles: ['Rhomboids', 'Trapezius'],
     equipment: ['resistance_bands'],
+    videoUrl: 'https://www.youtube.com/watch?v=w-RctWbFNGc',
     isCustom: false,
   },
   {
