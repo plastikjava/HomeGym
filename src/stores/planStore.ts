@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { WorkoutPlan, PlanDay, PlanExercise } from '@/types';
-import { defaultSBSHypertrophy } from '@/data/defaultPlans';
+import { defaultSBSHypertrophy, defaultSBSHypertrophyLight } from '@/data/defaultPlans';
 
 interface PlanStore {
   plans: WorkoutPlan[];
@@ -29,7 +29,15 @@ export const usePlanStore = create<PlanStore>()(
       initializePlans: () => {
         const currentPlans = get().plans.filter((p) => p.id !== 'default-3split');
         const hasSBS = currentPlans.some((p) => p.id === 'sbs-hypertrophy');
-        const updatedPlans = hasSBS ? currentPlans : [...currentPlans, defaultSBSHypertrophy];
+        const hasSBSLight = currentPlans.some((p) => p.id === 'sbs-hypertrophy-light');
+        
+        let updatedPlans = currentPlans;
+        if (!hasSBS) {
+          updatedPlans = [...updatedPlans, defaultSBSHypertrophy];
+        }
+        if (!hasSBSLight) {
+          updatedPlans = [...updatedPlans, defaultSBSHypertrophyLight];
+        }
         
         const activePlanId = get().activePlanId === 'default-3split' || !get().activePlanId
           ? defaultSBSHypertrophy.id

@@ -411,3 +411,46 @@ export const defaultSBSHypertrophy: WorkoutPlan = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
+
+export const defaultSBSHypertrophyLight: WorkoutPlan = {
+  id: 'sbs-hypertrophy-light',
+  name: 'SBS Novice Hypertrophy (Home Gym) Light',
+  description:
+    'Eine leichtere Version des SBS Novice Hypertrophy Templates mit reduzierter Anzahl an Übungen pro Tag für ein schnelleres Training.',
+  days: [
+    {
+      id: 'sbs-light-day-1-upper',
+      name: 'Tag 1: Oberkörper (Fokus Brust/Arme) Light',
+      focusAreas: ['Chest', 'Arms'],
+      exercises: [
+        { exerciseId: 'floor-press', targetSets: 3, targetReps: '8', targetWeight: 6 },
+        { exerciseId: 'overhead-press', targetSets: 3, targetReps: '8', targetWeight: 6 },
+        { exerciseId: 'pull-up', targetSets: 3, targetReps: '8', targetWeight: 0 },
+        { exerciseId: 'bicep-curl', targetSets: 3, targetReps: '8', targetWeight: 3 },
+      ],
+    },
+    {
+      id: 'sbs-light-day-2-legs',
+      name: 'Tag 2: Unterkörper (Beine / Rumpf) Light',
+      focusAreas: ['Legs', 'Core'],
+      exercises: [
+        { exerciseId: 'hip-thrust', targetSets: 3, targetReps: '8', targetWeight: 6 },
+        { exerciseId: 'wall-sit', targetSets: 3, targetReps: '45-60s' },
+        { exerciseId: 'banded-clamshell', targetSets: 3, targetReps: '8', targetWeight: 0 },
+        { exerciseId: 'plank', targetSets: 3, targetReps: '45-60s' },
+      ],
+    },
+    {
+      id: 'sbs-light-day-3-upper-arms',
+      name: 'Tag 3: Oberkörper (Fokus Rücken/Schultern) Light',
+      focusAreas: ['Back', 'Shoulders'],
+      exercises: [
+        { exerciseId: 'overhead-press', targetSets: 3, targetReps: '8', targetWeight: 6 },
+        { exerciseId: 'single-arm-row', targetSets: 3, targetReps: '8', targetWeight: 6 },
+        { exerciseId: 'lateral-raise', targetSets: 3, targetReps: '8', targetWeight: 3 },
+      ],
+    },
+  ],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
