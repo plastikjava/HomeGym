@@ -79,7 +79,7 @@ export function StatsOverview({
             className="glass-card p-4 flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold uppercase tracking-wider">
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-400 font-semibold uppercase tracking-wider">
                 {stat.label}
               </span>
               <div className={`w-7 h-7 rounded-lg border flex items-center justify-center ${stat.colorClass}`}>
@@ -87,10 +87,10 @@ export function StatsOverview({
               </div>
             </div>
             <div className="mt-3">
-              <span className="text-xl font-bold text-zinc-800 dark:text-zinc-100 font-mono">
+              <span className="text-xl font-bold text-zinc-800 dark:text-white font-mono">
                 {stat.value}
               </span>
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block">
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-400 block">
                 {stat.sub}
               </span>
             </div>
