@@ -36,8 +36,8 @@ export function StatsOverview({
       label: "Progression",
       value: `${progressionsCount} ✨`,
       sub: "Aufstiege gesamt",
-      icon: Sparkles,
-      colorClass: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+      icon: "💪",
+      colorClass: "bg-purple-500/10 border-purple-500/20",
     },
     {
       label: "Volumen",
@@ -71,7 +71,6 @@ export function StatsOverview({
       className="grid grid-cols-2 gap-3"
     >
       {stats.map((stat, idx) => {
-        const Icon = stat.icon;
         return (
           <motion.div
             key={stat.label}
@@ -83,7 +82,11 @@ export function StatsOverview({
                 {stat.label}
               </span>
               <div className={`w-7 h-7 rounded-lg border flex items-center justify-center ${stat.colorClass}`}>
-                <Icon className="w-4 h-4" />
+                {typeof stat.icon === "string" ? (
+                  <span className="text-sm select-none">{stat.icon}</span>
+                ) : (
+                  <stat.icon className="w-4 h-4" />
+                )}
               </div>
             </div>
             <div className="mt-3">
