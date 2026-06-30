@@ -69,18 +69,18 @@ export function NextWorkoutCard({ planDay, dayIndex, planName }: NextWorkoutCard
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-4 my-5 py-4 border-t border-b border-zinc-100 dark:border-zinc-800/50">
           <div>
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block uppercase font-medium">
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-400 block uppercase font-medium">
               Übungen
             </span>
-            <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+            <span className="text-lg font-bold text-zinc-800 dark:text-zinc-50">
               {planDay.exercises.length}
             </span>
           </div>
           <div>
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 block uppercase font-medium">
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-400 block uppercase font-medium">
               Dauer (ca.)
             </span>
-            <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200 font-mono">
+            <span className="text-lg font-bold text-zinc-800 dark:text-zinc-50 font-mono">
               {getEstimatedWorkoutDuration(planDay.exercises)} Min
             </span>
           </div>
