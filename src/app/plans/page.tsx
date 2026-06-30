@@ -229,15 +229,48 @@ export default function PlansPage() {
 
   // ─── Filtered Exercises for the Add Modal ─────────────────────────
 
-  const filteredExercises = allExercises.filter((ex) => {
-    const query = exerciseSearchQuery.toLowerCase();
-    return (
-      ex.nameEn.toLowerCase().includes(query) ||
-      (ex.nameDe && ex.nameDe.toLowerCase().includes(query)) ||
-      ex.category.toLowerCase().includes(query) ||
-      ex.primaryMuscles.some((m) => m.toLowerCase().includes(query))
-    );
-  });
+  const currentEditingDay = editedPlan?.days.find(d => d.id === showAddExerciseModal?.dayId);
+  const focusAreas = currentEditingDay?.focusAreas || [];
+
+  const getExerciseScore = (ex: Exercise) => {
+    return focusAreas.some(area => {
+      const areaLower = area.toLowerCase();
+      const catLower = ex.category.toLowerCase();
+      if (areaLower === catLower) return true;
+      if (areaLower === "chest" && catLower === "chest") return true;
+      if (areaLower === "arms" && catLower === "arms") return true;
+      if (areaLower === "legs" && catLower === "legs") return true;
+      if (areaLower === "core" && catLower === "core") return true;
+      if (areaLower === "back" && catLower === "back") return true;
+      if (areaLower === "shoulders" && catLower === "shoulders") return true;
+      if (areaLower === "full body" || areaLower === "full_body" || areaLower === "ganzkörper") return true;
+      
+      if (areaLower.includes("brust") && catLower === "chest") return true;
+      if (areaLower.includes("arm") && catLower === "arms") return true;
+      if (areaLower.includes("bein") && catLower === "legs") return true;
+      if (areaLower.includes("bauch") && catLower === "core") return true;
+      if (areaLower.includes("rumpf") && catLower === "core") return true;
+      if (areaLower.includes("rück") && catLower === "back") return true;
+      if (areaLower.includes("schulter") && catLower === "shoulders") return true;
+      return false;
+    }) ? 1 : 0;
+  };
+
+  const filteredExercises = allExercises
+    .filter((ex) => {
+      const query = exerciseSearchQuery.toLowerCase();
+      return (
+        ex.nameEn.toLowerCase().includes(query) ||
+        (ex.nameDe && ex.nameDe.toLowerCase().includes(query)) ||
+        ex.category.toLowerCase().includes(query) ||
+        ex.primaryMuscles.some((m) => m.toLowerCase().includes(query))
+      );
+    })
+    .sort((a, b) => {
+      const scoreA = getExerciseScore(a);
+      const scoreB = getExerciseScore(b);
+      return scoreB - scoreA;
+    });
 
   // ─── Render Sub-Views ──────────────────────────────────────────────
 
@@ -500,12 +533,23 @@ export default function PlansPage() {
                     <button
                       key={ex.id}
                       onClick={() => handleAddExerciseToDay(ex.id)}
-                      className="w-full flex items-center justify-between text-left p-3 rounded-2xl bg-white/[0.01] border border-white/[0.04] hover:bg-white/[0.03] hover:border-zinc-800 transition-all"
+                      className={`w-full flex items-center justify-between text-left p-3 rounded-2xl border transition-all ${
+                        getExerciseScore(ex) === 1
+                          ? "bg-emerald-500/[0.02] border-emerald-500/20 hover:bg-emerald-500/[0.04]"
+                          : "bg-white/[0.01] border-white/[0.04] hover:bg-white/[0.03]"
+                      }`}
                     >
                       <div>
-                        <span className="text-xs font-bold text-zinc-200 block">
-                          {ex.nameEn}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-zinc-200">
+                            {ex.nameEn}
+                          </span>
+                          {getExerciseScore(ex) === 1 && (
+                            <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Empfohlen
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-zinc-500">
                           {ex.nameDe ? `${ex.nameDe} · ` : ""}{ex.primaryMuscles[0]}
                         </span>
