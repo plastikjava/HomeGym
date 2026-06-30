@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Clipboard, Check, X, AlertCircle } from "lucide-react";
 import { WorkoutSession, Exercise } from "@/types";
 import { useWorkoutStore } from "@/stores/workoutStore";
+import { format, parseISO } from "date-fns";
 
 interface ExportDialogProps {
   session: WorkoutSession;
@@ -14,11 +15,17 @@ interface ExportDialogProps {
 
 export function generateWorkoutExportText(session: WorkoutSession, exercises: Exercise[]): string {
   // If notes is already a pre-saved custom export, return it
-  if (session.notes && session.notes.includes("kg x")) {
+  if (session.notes && (session.notes.startsWith("Training") || session.notes.includes("kg x"))) {
     return session.notes;
   }
 
-  return session.exercises
+  const dateStr = session.completedAt
+    ? format(parseISO(session.completedAt), "dd.MM.yyyy")
+    : format(new Date(), "dd.MM.yyyy");
+
+  const header = `Training ${dateStr}\n`;
+
+  const exercisesText = session.exercises
     .map((we) => {
       const ex = exercises.find((e) => e.id === we.exerciseId);
       const exName = ex?.nameEn || we.exerciseId;
@@ -45,6 +52,8 @@ export function generateWorkoutExportText(session: WorkoutSession, exercises: Ex
     })
     .filter(Boolean)
     .join("\n");
+
+  return header + exercisesText;
 }
 
 export default function ExportDialog({ session, exercises, onClose }: ExportDialogProps) {
