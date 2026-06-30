@@ -294,7 +294,7 @@ function WorkoutDetailModal({
                           : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
                       }`}
                     >
-                      {s.type === "warmup" ? `W${idx + 1}` : `S${idx + 1}`}: {s.weight}k x {s.reps}
+                      {s.type === "warmup" ? `W${idx + 1}` : `S${idx + 1}`}: {s.isSeconds ? `${s.reps} sek` : `${s.weight}k x ${s.reps}`}
                     </span>
                   ))}
                 </div>

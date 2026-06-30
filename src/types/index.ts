@@ -77,6 +77,7 @@ export interface WorkoutSet {
   type: SetType;
   completed: boolean;
   completedAt?: string; // ISO timestamp
+  isSeconds?: boolean;
 }
 
 export interface WorkoutExercise {

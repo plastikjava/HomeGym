@@ -451,6 +451,7 @@ export default function ExerciseCard({
                     onUpdate={(updates) => onUpdateSet(set.id, updates)}
                     onComplete={() => onCompleteSet(set.id)}
                     onRemove={() => onRemoveSet(set.id)}
+                    isPullUp={exercise.id === 'pull-up'}
                   />
                 ))}
               </AnimatePresence>

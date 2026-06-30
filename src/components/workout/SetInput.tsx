@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Minus, Plus, X } from 'lucide-react';
+import { Check, Minus, Plus, X, Clock, Dumbbell } from 'lucide-react';
 import type { WorkoutSet } from '@/types';
 
 interface SetInputProps {
@@ -11,6 +11,7 @@ interface SetInputProps {
   onUpdate: (updates: Partial<WorkoutSet>) => void;
   onComplete: () => void;
   onRemove: () => void;
+  isPullUp?: boolean;
 }
 
 export default function SetInput({
@@ -19,15 +20,17 @@ export default function SetInput({
   onUpdate,
   onComplete,
   onRemove,
+  isPullUp,
 }: SetInputProps) {
   const isWarmup = set.type === 'warmup';
 
   const handleRepsChange = useCallback(
     (delta: number) => {
-      const next = Math.max(0, set.reps + delta);
+      const step = set.isSeconds ? 5 : 1;
+      const next = Math.max(0, set.reps + delta * step);
       onUpdate({ reps: next });
     },
-    [set.reps, onUpdate],
+    [set.reps, set.isSeconds, onUpdate],
   );
 
   const handleWeightChange = useCallback(
@@ -80,6 +83,22 @@ export default function SetInput({
         >
           {isWarmup ? 'W' : 'A'}
         </span>
+        {isPullUp && !set.completed && (
+          <button
+            type="button"
+            onClick={() =>
+              onUpdate({
+                isSeconds: !set.isSeconds,
+                reps: !set.isSeconds ? 30 : 8,
+                weight: !set.isSeconds ? 0 : set.weight,
+              })
+            }
+            className="mt-1 flex items-center justify-center p-1 rounded bg-zinc-900 text-zinc-400 hover:text-zinc-200 transition-colors"
+            title={set.isSeconds ? "Auf Wiederholungen wechseln" : "Auf Sekunden (Dead Hang) wechseln"}
+          >
+            {set.isSeconds ? <Dumbbell size={10} /> : <Clock size={10} />}
+          </button>
+        )}
       </div>
 
       {/* Reps stepper */}
@@ -93,7 +112,7 @@ export default function SetInput({
           onClick={() => handleRepsChange(-1)}
           disabled={set.completed}
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-400 active:bg-white/[0.12] disabled:opacity-30"
-          aria-label="Wiederholungen verringern"
+          aria-label={set.isSeconds ? "Sekunden verringern" : "Wiederholungen verringern"}
         >
           <Minus size={14} />
         </button>
@@ -102,7 +121,7 @@ export default function SetInput({
             {set.reps}
           </span>
           <span className="text-[9px] uppercase tracking-wider text-zinc-500">
-            Wdh
+            {set.isSeconds ? 'Sek' : 'Wdh'}
           </span>
         </div>
         <button
@@ -110,48 +129,50 @@ export default function SetInput({
           onClick={() => handleRepsChange(1)}
           disabled={set.completed}
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-400 active:bg-white/[0.12] disabled:opacity-30"
-          aria-label="Wiederholungen erhöhen"
+          aria-label={set.isSeconds ? "Sekunden erhöhen" : "Wiederholungen erhöhen"}
         >
           <Plus size={14} />
         </button>
       </div>
 
       {/* Divider */}
-      <div className="h-6 w-px bg-white/[0.08]" />
+      {!set.isSeconds && <div className="h-6 w-px bg-white/[0.08]" />}
 
       {/* Weight stepper */}
-      <div
-        className={`flex items-center gap-0.5 transition-opacity ${
-          set.completed ? 'opacity-50' : ''
-        }`}
-      >
-        <button
-          type="button"
-          onClick={() => handleWeightChange(-0.5)}
-          disabled={set.completed}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-400 active:bg-white/[0.12] disabled:opacity-30"
-          aria-label="Gewicht verringern"
+      {!set.isSeconds && (
+        <div
+          className={`flex items-center gap-0.5 transition-opacity ${
+            set.completed ? 'opacity-50' : ''
+          }`}
         >
-          <Minus size={14} />
-        </button>
-        <div className="flex w-14 flex-col items-center">
-          <span className="text-base font-semibold text-zinc-100 tabular-nums">
-            {set.weight}
-          </span>
-          <span className="text-[9px] uppercase tracking-wider text-zinc-500">
-            kg
-          </span>
+          <button
+            type="button"
+            onClick={() => handleWeightChange(-0.5)}
+            disabled={set.completed}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-400 active:bg-white/[0.12] disabled:opacity-30"
+            aria-label="Gewicht verringern"
+          >
+            <Minus size={14} />
+          </button>
+          <div className="flex w-14 flex-col items-center">
+            <span className="text-base font-semibold text-zinc-100 tabular-nums">
+              {set.weight}
+            </span>
+            <span className="text-[9px] uppercase tracking-wider text-zinc-500">
+              kg
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleWeightChange(0.5)}
+            disabled={set.completed}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-400 active:bg-white/[0.12] disabled:opacity-30"
+            aria-label="Gewicht erhöhen"
+          >
+            <Plus size={14} />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => handleWeightChange(0.5)}
-          disabled={set.completed}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-zinc-400 active:bg-white/[0.12] disabled:opacity-30"
-          aria-label="Gewicht erhöhen"
-        >
-          <Plus size={14} />
-        </button>
-      </div>
+      )}
 
       {/* Complete button */}
       <button
