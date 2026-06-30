@@ -331,6 +331,9 @@ function snapToDumbbellWeight(target: number): number {
         return {
           exerciseId: pe.exerciseId,
           sets,
+          originalTargetSets: pe.targetSets,
+          originalTargetReps: pe.targetReps,
+          originalTargetWeight: pe.targetWeight,
         };
       });
 

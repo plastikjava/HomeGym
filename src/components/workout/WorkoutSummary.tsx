@@ -41,18 +41,18 @@ function ConfettiParticle({ delay, x }: { delay: number; x: number }) {
     <motion.div
       initial={{ y: -20, x: x * 100, opacity: 1, scale: 1 }}
       animate={{
-        y: 300,
+        y: 350,
         x: x * 160,
         opacity: 0,
         scale: 0.5,
         rotate: x > 0 ? 360 : -360,
       }}
       transition={{
-        duration: 2,
+        duration: 2.2,
         delay,
         ease: 'easeOut',
       }}
-      className="pointer-events-none absolute top-0 h-2 w-2 rounded-sm"
+      className="pointer-events-none absolute top-0 h-2.5 w-2.5 rounded-sm z-30"
       style={{ backgroundColor: color, left: '50%' }}
     />
   );
@@ -165,7 +165,7 @@ export default function WorkoutSummary({
             </button>
 
             {/* Confetti */}
-            <div className="absolute inset-x-0 top-0 flex justify-center overflow-hidden h-80 pointer-events-none">
+            <div className="absolute inset-x-0 top-0 z-30 flex justify-center overflow-hidden h-80 pointer-events-none">
               {confettiParticles.map((p) => (
                 <ConfettiParticle key={p.id} delay={p.delay} x={p.x} />
               ))}

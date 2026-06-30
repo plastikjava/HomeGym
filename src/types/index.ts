@@ -84,6 +84,9 @@ export interface WorkoutExercise {
   exerciseId: string;
   sets: WorkoutSet[];
   notes?: string;
+  originalTargetSets?: number;
+  originalTargetReps?: string;
+  originalTargetWeight?: number;
 }
 
 export interface WorkoutSession {

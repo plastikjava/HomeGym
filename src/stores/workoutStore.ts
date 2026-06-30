@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { WorkoutSession, WorkoutExercise, WorkoutSet, SetType } from '@/types';
+import { usePlanStore } from './planStore';
 
 function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -179,6 +180,26 @@ export const useWorkoutStore = create<WorkoutStore>()(
       },
 
       deleteWorkoutSession: (id) => {
+        const session = get().workoutHistory.find((w) => w.id === id);
+        if (session) {
+          session.exercises.forEach((we) => {
+            if (
+              we.originalTargetSets !== undefined &&
+              we.originalTargetReps !== undefined
+            ) {
+              usePlanStore.getState().updatePlanExercise(
+                session.planId,
+                session.planDayId,
+                we.exerciseId,
+                {
+                  targetSets: we.originalTargetSets,
+                  targetReps: we.originalTargetReps,
+                  targetWeight: we.originalTargetWeight,
+                }
+              );
+            }
+          });
+        }
         set((state) => ({
           workoutHistory: state.workoutHistory.filter((w) => w.id !== id),
         }));
