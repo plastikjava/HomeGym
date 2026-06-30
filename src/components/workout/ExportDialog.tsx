@@ -23,7 +23,16 @@ export function generateWorkoutExportText(session: WorkoutSession, exercises: Ex
     ? format(parseISO(session.completedAt), "dd.MM.yyyy")
     : format(new Date(), "dd.MM.yyyy");
 
-  const header = `Training ${dateStr}\n`;
+  const start = new Date(session.startedAt).getTime();
+  const end = session.completedAt ? new Date(session.completedAt).getTime() : Date.now();
+  const durationMin = Math.round((end - start) / 60000);
+
+  let hrDetails = "";
+  if (session.avgHeartRate && session.maxHeartRate) {
+    hrDetails = ` - Ø Puls: ${session.avgHeartRate} bpm, Max: ${session.maxHeartRate} bpm`;
+  }
+
+  const header = `Training ${dateStr} (${durationMin} Min${hrDetails})\n`;
 
   const exercisesText = session.exercises
     .map((we) => {
