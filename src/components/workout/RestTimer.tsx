@@ -116,6 +116,9 @@ export default function RestTimer({
       
       // Play audio alarm signal
       playBeep();
+      if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
 
       const timeout = setTimeout(() => {
         onComplete();

@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import type { Exercise, WorkoutSession } from '@/types';
 import ExportDialog from './ExportDialog';
+import { useWorkoutStore } from '@/stores/workoutStore';
+import { getBrokenPRsInSession } from '@/lib/api';
 
 interface WorkoutSummaryProps {
   session: WorkoutSession;
@@ -63,6 +65,8 @@ export default function WorkoutSummary({
   progressions,
 }: WorkoutSummaryProps) {
   const [showExport, setShowExport] = useState(true);
+  const workoutHistory = useWorkoutStore((s) => s.workoutHistory);
+  const brokenPRs = useMemo(() => getBrokenPRsInSession(session, workoutHistory), [session, workoutHistory]);
   const stats = useMemo(() => {
     let totalSets = 0;
     let totalReps = 0;
@@ -112,13 +116,16 @@ export default function WorkoutSummary({
   }, [session, exercises]);
 
   const confettiParticles = useMemo(
-    () =>
-      Array.from({ length: 14 }, (_, i) => ({
+    () => {
+      const hasProgs = progressions && progressions.length > 0;
+      const count = hasProgs ? 45 : 14;
+      return Array.from({ length: count }, (_, i) => ({
         id: i,
-        delay: Math.random() * 0.6,
-        x: (Math.random() - 0.5) * 2,
-      })),
-    [],
+        delay: Math.random() * (hasProgs ? 1.5 : 0.6),
+        x: (Math.random() - 0.5) * 2.2,
+      }));
+    },
+    [progressions],
   );
 
   return (
@@ -175,14 +182,32 @@ export default function WorkoutSummary({
                   stiffness: 200,
                   delay: 0.15,
                 }}
+                className="relative"
               >
-                <Trophy size={40} className="text-amber-400" />
+                <Trophy size={40} className={progressions && progressions.length > 0 ? "text-yellow-400 drop-shadow-[0_0_12px_rgba(234,179,8,0.5)]" : "text-amber-400"} />
+                {progressions && progressions.length > 0 && (
+                  <motion.span
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    className="absolute -top-2 -right-2 text-xs"
+                  >
+                    👑
+                  </motion.span>
+                )}
               </motion.div>
-              <h2 className="mt-3 text-xl font-bold text-zinc-100">
-                Workout abgeschlossen! 💪
+              <h2 className="mt-3 text-xl font-bold text-zinc-100 flex items-center gap-1.5">
+                {progressions && progressions.length > 0 ? (
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 font-extrabold animate-pulse">
+                    LEVEL UP! ⚡
+                  </span>
+                ) : (
+                  "Workout abgeschlossen! 💪"
+                )}
               </h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                Hervorragende Arbeit!
+              <p className="mt-1 text-sm text-zinc-400">
+                {progressions && progressions.length > 0
+                  ? `${progressions.length} Progression-Aufstieg${progressions.length > 1 ? "e" : ""} erreicht!`
+                  : "Hervorragende Arbeit!"}
               </p>
             </div>
 
@@ -273,7 +298,36 @@ export default function WorkoutSummary({
                 </div>
               </div>
             )}
-
+            {/* Broken PRs */}
+            {brokenPRs.length > 0 && (
+              <div className="mt-5">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                  <Trophy size={12} />
+                  <span>Persönlicher Rekord!</span>
+                </h3>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {brokenPRs.map((item, i) => {
+                    const ex = exercises.find((e) => e.id === item.exerciseId);
+                    return (
+                      <motion.div
+                        key={item.exerciseId}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.25 + i * 0.05 }}
+                        className="rounded-xl bg-amber-500/[0.06] border border-amber-500/10 px-3 py-2 flex items-center justify-between text-xs"
+                      >
+                        <span className="text-zinc-250 font-medium truncate max-w-[180px]">
+                          {ex?.nameEn || item.exerciseId}
+                        </span>
+                        <span className="text-amber-400 font-bold font-mono flex items-center gap-1">
+                          🏆 {item.newPR.isSeconds ? `${item.newPR.reps} sek` : `${item.newPR.weight} kg × ${item.newPR.reps}`}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {/* Exercise breakdown */}
             <div className="mt-5">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">

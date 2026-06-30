@@ -8,6 +8,7 @@ import { useExerciseStore } from "@/stores/exerciseStore";
 import { NextWorkoutCard } from "@/components/dashboard/NextWorkoutCard";
 import { StatsOverview } from "@/components/dashboard/StatsOverview";
 import { RecentWorkouts } from "@/components/dashboard/RecentWorkouts";
+import { TrainerAI } from "@/components/dashboard/TrainerAI";
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
@@ -87,6 +88,9 @@ export default function DashboardPage() {
         progressionsCount={totalProgressions}
         totalVolume={Math.round(totalVolume)}
       />
+
+      {/* Trainer AI */}
+      <TrainerAI />
 
       {/* Next Workout Card */}
       {activePlan && nextDay && (

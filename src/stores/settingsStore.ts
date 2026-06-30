@@ -25,6 +25,7 @@ interface SettingsStore {
   toggleEquipment: (equipment: EquipmentType) => void;
   setGoogleClientId: (id: string) => void;
   setLastGoogleSync: (date: string) => void;
+  setDeloadActive: (active: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -75,6 +76,14 @@ export const useSettingsStore = create<SettingsStore>()(
       setLastGoogleSync: (date) =>
         set((state) => ({
           settings: { ...state.settings, lastGoogleSync: date },
+        })),
+      setDeloadActive: (active) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            deloadActive: active,
+            deloadStartedAt: active ? new Date().toISOString() : undefined,
+          },
         })),
     }),
     {

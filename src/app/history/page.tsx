@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Clock, Dumbbell, ChevronRight, X, Trash2, Clipboard } from "lucide-react";
+import { Calendar, Clock, Dumbbell, ChevronRight, X, Trash2, Clipboard, Trophy, TrendingUp } from "lucide-react";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { useExerciseStore } from "@/stores/exerciseStore";
 import { usePlanStore } from "@/stores/planStore";
@@ -10,6 +10,7 @@ import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { WorkoutSession, Exercise, WorkoutPlan } from "@/types";
 import ExportDialog from "@/components/workout/ExportDialog";
+import { getPersonalRecord } from "@/lib/api";
 
 export default function HistoryPage() {
   const [mounted, setMounted] = useState(false);
@@ -19,32 +20,102 @@ export default function HistoryPage() {
   const plans = usePlanStore((s) => s.plans);
   
   const [selectedSession, setSelectedSession] = useState<WorkoutSession | null>(null);
+  const [activeTab, setActiveTab] = useState<"history" | "stats">("history");
+  const [selectedChartExerciseId, setSelectedChartExerciseId] = useState<string>("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
-
-  // Sort by date, newest first
-  const sortedHistory = [...workoutHistory]
-    .filter((w) => w.completedAt)
-    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+  // Sort history by date, newest first
+  const sortedHistory = useMemo(() => {
+    return [...workoutHistory]
+      .filter((w) => w.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+  }, [workoutHistory]);
 
   // Group by month
-  const groupedByMonth: Record<string, typeof sortedHistory> = {};
-  sortedHistory.forEach((session) => {
-    const monthKey = format(parseISO(session.completedAt!), "MMMM yyyy", { locale: de });
-    if (!groupedByMonth[monthKey]) groupedByMonth[monthKey] = [];
-    groupedByMonth[monthKey].push(session);
-  });
+  const groupedByMonth = useMemo(() => {
+    const groups: Record<string, typeof sortedHistory> = {};
+    sortedHistory.forEach((session) => {
+      const monthKey = format(parseISO(session.completedAt!), "MMMM yyyy", { locale: de });
+      if (!groups[monthKey]) groups[monthKey] = [];
+      groups[monthKey].push(session);
+    });
+    return groups;
+  }, [sortedHistory]);
+
+  // Compute all exercises that have PRs
+  const personalRecords = useMemo(() => {
+    const list: Array<{ exercise: Exercise; record: any }> = [];
+    exercises.forEach((ex) => {
+      const rec = getPersonalRecord(ex.id, workoutHistory);
+      if (rec) {
+        list.push({ exercise: ex, record: rec });
+      }
+    });
+    // Sort list by date newest first
+    return list.sort((a, b) => new Date(b.record.date).getTime() - new Date(a.record.date).getTime());
+  }, [exercises, workoutHistory]);
+
+  // Set default exercise for chart when component mounts or history updates
+  useEffect(() => {
+    if (personalRecords.length > 0 && !selectedChartExerciseId) {
+      setSelectedChartExerciseId(personalRecords[0].exercise.id);
+    }
+  }, [personalRecords, selectedChartExerciseId]);
+
+  // Generate chart data points
+  const chartPoints = useMemo(() => {
+    if (!selectedChartExerciseId) return [];
+    
+    const points: Array<{ date: string; displayDate: string; value: number; label: string; isSeconds: boolean }> = [];
+    
+    // Sort chronologically (oldest to newest)
+    const chronoHistory = [...workoutHistory]
+      .filter((w) => w.completedAt)
+      .sort((a, b) => new Date(a.completedAt!).getTime() - new Date(b.completedAt!).getTime());
+
+    chronoHistory.forEach((session) => {
+      const match = session.exercises.find((e) => e.exerciseId === selectedChartExerciseId);
+      if (match) {
+        let maxVal = 0;
+        let isSec = false;
+        match.sets.forEach((s) => {
+          if (s.completed && s.type === "working") {
+            if (s.isSeconds) {
+              maxVal = Math.max(maxVal, s.reps);
+              isSec = true;
+            } else {
+              maxVal = Math.max(maxVal, s.weight);
+            }
+          }
+        });
+        if (maxVal > 0) {
+          const parsed = parseISO(session.completedAt!);
+          points.push({
+            date: session.completedAt!,
+            displayDate: format(parsed, "dd.MM", { locale: de }),
+            value: maxVal,
+            label: isSec ? `${maxVal}s` : `${maxVal}kg`,
+            isSeconds: isSec,
+          });
+        }
+      }
+    });
+
+    return points;
+  }, [selectedChartExerciseId, workoutHistory]);
+
+  if (!mounted) return null;
 
   return (
-    <div className="px-4 pt-4 pb-8 max-w-lg mx-auto">
+    <div className="px-4 pt-4 pb-8 max-w-lg mx-auto space-y-6">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
+        className="flex flex-col"
       >
         <h1 className="text-2xl font-bold">Trainingshistorie</h1>
         <p className="text-[var(--muted)] text-sm mt-1">
@@ -52,89 +123,272 @@ export default function HistoryPage() {
         </p>
       </motion.div>
 
-      {sortedHistory.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="glass-card p-8 text-center"
+      {/* Tabs */}
+      <div className="flex gap-2 p-1 bg-white/[0.02] border border-white/[0.04] rounded-2xl">
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "history"
+              ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+              : "text-zinc-500 hover:text-zinc-300"
+          }`}
         >
-          <Calendar className="w-12 h-12 text-[var(--muted-light)] mx-auto mb-3" />
-          <p className="text-[var(--muted)] font-medium">Noch keine Trainings absolviert</p>
-          <p className="text-xs text-[var(--muted-light)] mt-1">
-            Starte dein erstes Workout und verfolge deinen Fortschritt!
-          </p>
-        </motion.div>
-      ) : (
-        Object.entries(groupedByMonth).map(([month, sessions]) => (
-          <div key={month} className="mb-6">
-            <h2 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-3">
-              {month}
-            </h2>
-            <div className="space-y-2">
-              {sessions.map((session, index) => {
-                const plan = plans.find((p) => p.id === session.planId);
-                const planDay = plan?.days.find((d) => d.id === session.planDayId);
-                const completedSets = session.exercises.reduce(
-                  (t, e) => t + e.sets.filter((s) => s.completed).length,
-                  0
-                );
-                const totalVolume = session.exercises.reduce(
-                  (t, e) =>
-                    t + e.sets.filter((s) => s.completed).reduce((st, s) => st + s.weight * s.reps, 0),
-                  0
-                );
-                const duration = session.completedAt
-                  ? Math.round(
-                      (new Date(session.completedAt).getTime() -
-                        new Date(session.startedAt).getTime()) /
-                        60000
-                    )
-                  : 0;
+          Trainingsverlauf
+        </button>
+        <button
+          onClick={() => setActiveTab("stats")}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "stats"
+              ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+              : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          Statistiken & Rekorde
+        </button>
+      </div>
 
-                return (
-                  <motion.div
-                    key={session.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => setSelectedSession(session)}
-                    className="glass-card p-3 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-transform"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                        <Dumbbell className="w-5 h-5 text-blue-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">
-                          {planDay?.name || "Training"}
-                        </h3>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="text-xs text-[var(--muted)]">
-                            {format(parseISO(session.completedAt!), "EEEE, d. MMM", { locale: de })}
-                          </span>
+      {activeTab === "history" ? (
+        /* ─── HISTORY TAB ─────────────────────────────────────────── */
+        sortedHistory.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="glass-card p-8 text-center"
+          >
+            <Calendar className="w-12 h-12 text-[var(--muted-light)] mx-auto mb-3" />
+            <p className="text-[var(--muted)] font-medium">Noch keine Trainings absolviert</p>
+            <p className="text-xs text-[var(--muted-light)] mt-1">
+              Starte dein erstes Workout und verfolge deinen Fortschritt!
+            </p>
+          </motion.div>
+        ) : (
+          Object.entries(groupedByMonth).map(([month, sessions]) => (
+            <div key={month} className="space-y-3">
+              <h2 className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mt-4 mb-2">
+                {month}
+              </h2>
+              <div className="space-y-2">
+                {sessions.map((session, index) => {
+                  const plan = plans.find((p) => p.id === session.planId);
+                  const planDay = plan?.days.find((d) => d.id === session.planDayId);
+                  const completedSets = session.exercises.reduce(
+                    (t, e) => t + e.sets.filter((s) => s.completed).length,
+                    0
+                  );
+                  const totalVolume = session.exercises.reduce(
+                    (t, e) =>
+                      t + e.sets.filter((s) => s.completed).reduce((st, s) => st + s.weight * s.reps, 0),
+                    0
+                  );
+                  const duration = session.completedAt
+                    ? Math.round(
+                        (new Date(session.completedAt).getTime() -
+                          new Date(session.startedAt).getTime()) /
+                          60000
+                      )
+                    : 0;
+
+                  return (
+                    <motion.div
+                      key={session.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => setSelectedSession(session)}
+                      className="glass-card p-3 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-transform"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                          <Dumbbell className="w-5 h-5 text-blue-400" />
                         </div>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[10px] text-[var(--muted-light)] flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {duration} Min
-                          </span>
-                          <span className="text-[10px] text-[var(--muted-light)]">
-                            {completedSets} Sätze
-                          </span>
-                          {totalVolume > 0 && (
-                            <span className="text-[10px] text-[var(--muted-light)]">
-                              {Math.round(totalVolume)} kg
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm truncate">
+                            {planDay?.name || "Training"}
+                          </h3>
+                          <div className="flex items-center gap-3 mt-0.5">
+                            <span className="text-xs text-[var(--muted)]">
+                              {format(parseISO(session.completedAt!), "EEEE, d. MMM", { locale: de })}
                             </span>
-                          )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-[10px] text-[var(--muted-light)] flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {duration} Min
+                            </span>
+                            <span className="text-[10px] text-[var(--muted-light)]">
+                              {completedSets} Sätze
+                            </span>
+                            {totalVolume > 0 && (
+                              <span className="text-[10px] text-[var(--muted-light)]">
+                                {Math.round(totalVolume)} kg
+                              </span>
+                            )}
+                          </div>
                         </div>
+                        <ChevronRight className="w-4 h-4 text-[var(--muted-light)] flex-shrink-0" />
                       </div>
-                      <ChevronRight className="w-4 h-4 text-[var(--muted-light)] flex-shrink-0" />
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
+          ))
+        )
+      ) : (
+        /* ─── STATS & RECORDS TAB ──────────────────────────────────── */
+        <div className="space-y-6">
+          {/* Progress Chart Card */}
+          <div className="glass-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-400" />
+                <h2 className="font-bold text-sm text-zinc-100">Leistungsverlauf</h2>
+              </div>
+              
+              {/* Exercise Selector */}
+              {personalRecords.length > 0 && (
+                <select
+                  value={selectedChartExerciseId}
+                  onChange={(e) => setSelectedChartExerciseId(e.target.value)}
+                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-blue-500"
+                >
+                  {personalRecords.map((item) => (
+                    <option key={item.exercise.id} value={item.exercise.id}>
+                      {item.exercise.nameEn}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {chartPoints.length >= 2 ? (
+              /* Custom SVG Line Chart */
+              <div className="pt-2">
+                <div className="relative w-full h-[180px]">
+                  <svg className="w-full h-full" viewBox="0 0 320 180">
+                    <defs>
+                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Grid lines */}
+                    <line x1="20" y1="20" x2="300" y2="20" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                    <line x1="20" y1="80" x2="300" y2="80" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                    <line x1="20" y1="140" x2="300" y2="140" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+
+                    {(() => {
+                      const values = chartPoints.map((p) => p.value);
+                      const maxVal = Math.max(...values, 1);
+                      const minVal = Math.min(...values, 0);
+                      const range = maxVal - minVal || 1;
+                      const width = 320;
+                      const height = 180;
+                      const padX = 25;
+                      const padY = 25;
+
+                      const pts = chartPoints.map((p, idx) => {
+                        const x = padX + (idx / (chartPoints.length - 1)) * (width - padX * 2);
+                        const y = height - padY - ((p.value - minVal) / range) * (height - padY * 2);
+                        return { x, y, ...p };
+                      });
+
+                      const pathD = `M ${pts[0]!.x} ${pts[0]!.y} ` + pts.slice(1).map((p) => `L ${p.x} ${p.y}`).join(" ");
+                      const areaD = `${pathD} L ${pts[pts.length - 1]!.x} 155 L ${pts[0]!.x} 155 Z`;
+
+                      return (
+                        <>
+                          {/* Gradient fill */}
+                          <path d={areaD} fill="url(#chartGradient)" />
+
+                          {/* Line */}
+                          <motion.path
+                            d={pathD}
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                          />
+
+                          {/* Dots */}
+                          {pts.map((p, i) => (
+                            <g key={i}>
+                              <circle
+                                cx={p.x}
+                                cy={p.y}
+                                r="4"
+                                fill="#09090b"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                              />
+                              <text
+                                x={p.x}
+                                y={p.y - 8}
+                                textAnchor="middle"
+                                className="text-[8px] fill-zinc-400 font-bold font-mono"
+                              >
+                                {p.label}
+                              </text>
+                              <text
+                                x={p.x}
+                                y="168"
+                                textAnchor="middle"
+                                className="text-[8px] fill-zinc-500 font-semibold"
+                              >
+                                {p.displayDate}
+                              </text>
+                            </g>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </svg>
+                </div>
+              </div>
+            ) : (
+              <div className="h-[120px] flex items-center justify-center border border-dashed border-zinc-800 rounded-2xl text-xs text-zinc-500">
+                Trage mindestens 2 Einheiten dieser Übung ein, um den Verlauf zu sehen.
+              </div>
+            )}
           </div>
-        ))
+
+          {/* Personal Records List */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-400" />
+              <h2 className="font-bold text-sm text-zinc-100">Persönliche Rekorde (PR)</h2>
+            </div>
+
+            {personalRecords.length === 0 ? (
+              <p className="text-xs text-zinc-500 py-2">Noch keine Rekorde aufgestellt.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                {personalRecords.map(({ exercise, record }) => (
+                  <div
+                    key={exercise.id}
+                    className="glass-card p-3 flex items-center justify-between hover:border-amber-500/10 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-zinc-200 block truncate">
+                        {exercise.nameEn}
+                      </span>
+                      <span className="text-[10px] text-zinc-500">
+                        erreicht am {format(parseISO(record.date), "dd.MM.yyyy")}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl text-amber-400 text-xs font-bold font-mono">
+                      🏆 {record.isSeconds ? `${record.reps} sek` : `${record.weight} kg × ${record.reps}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Details Modal */}

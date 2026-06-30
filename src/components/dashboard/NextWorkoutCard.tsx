@@ -27,6 +27,9 @@ export function NextWorkoutCard({ planDay, dayIndex, planName }: NextWorkoutCard
       sets: [],
     }));
 
+    if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(100);
+    }
     startWorkout(activePlanId, planDay.id, workoutExercises);
     router.push("/workout");
   };

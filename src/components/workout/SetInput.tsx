@@ -174,10 +174,14 @@ export default function SetInput({
         </div>
       )}
 
-      {/* Complete button */}
       <button
         type="button"
-        onClick={onComplete}
+        onClick={() => {
+          if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+            navigator.vibrate(40);
+          }
+          onComplete();
+        }}
         className={`ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
           set.completed
             ? 'border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'

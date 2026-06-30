@@ -111,6 +111,8 @@ export interface UserSettings {
   availableEquipment: EquipmentType[];
   googleClientId?: string;
   lastGoogleSync?: string;
+  deloadActive?: boolean;
+  deloadStartedAt?: string;
 }
 
 export const CATEGORY_COLORS: Record<string, string> = {

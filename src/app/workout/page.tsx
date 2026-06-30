@@ -264,9 +264,12 @@ function snapToDumbbellWeight(target: number): number {
     (day: PlanDay) => {
       if (!activePlan) return;
 
+      const deloadActive = useSettingsStore.getState().settings.deloadActive;
+
       const workoutExercises: WorkoutExercise[] = day.exercises.map((pe) => {
         const reps = parseInt(pe.targetReps) || 8;
-        const weight = pe.targetWeight ?? 0;
+        const baseWeight = pe.targetWeight ?? 0;
+        const weight = deloadActive ? snapToDumbbellWeight(baseWeight * 0.6) : baseWeight;
 
         const sets: WorkoutSet[] = [];
 
@@ -313,8 +316,9 @@ function snapToDumbbellWeight(target: number): number {
           }
         }
 
-        // Add regular target working sets
-        for (let i = 0; i < pe.targetSets; i++) {
+        // Add regular target working sets (halved if deload active)
+        const targetSetsCount = deloadActive ? Math.max(1, Math.round(pe.targetSets / 2)) : pe.targetSets;
+        for (let i = 0; i < targetSetsCount; i++) {
           sets.push({
             id: generateId() + `-r${i}`,
             reps,
@@ -330,6 +334,9 @@ function snapToDumbbellWeight(target: number): number {
         };
       });
 
+      if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(100);
+      }
       startWorkout(activePlan.id, day.id, workoutExercises);
       setSelectedDay(day);
     },
@@ -440,6 +447,9 @@ function snapToDumbbellWeight(target: number): number {
       setHeartRate(null);
     }
 
+    if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate([150, 100, 150]);
+    }
     completeWorkout(undefined, avgHr, maxHr, applied.length);
     setShowSummary(true);
   }, [activeWorkout, activePlan, currentPlanDay, updatePlanExercise, completeWorkout, exercises, progressionsApplied, heartRates, connectedDevice]);
@@ -630,6 +640,16 @@ function snapToDumbbellWeight(target: number): number {
           </div>
         </div>
       </motion.div>
+
+      {settings.deloadActive && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="mb-4 bg-purple-500/10 border border-purple-500/20 p-3 rounded-2xl flex items-center gap-2 text-purple-400"
+        >
+          <span className="text-xs">⚡ <strong>Deload-Modus Aktiv:</strong> Gewichte sind um 40% reduziert und Satzzahlen sind halbiert zur Regeneration.</span>
+        </motion.div>
+      )}
 
       {/* Exercise Cards */}
       <div className="space-y-3">

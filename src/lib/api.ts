@@ -1,4 +1,4 @@
-import { Exercise, ExerciseCategory, EquipmentType } from "@/types";
+import { Exercise, ExerciseCategory, EquipmentType, WorkoutSession } from "@/types";
 
 const WGER_BASE_URL = "https://wger.de/api/v2";
 
@@ -363,4 +363,89 @@ function getPreviousDumbbellWeight(weight: number): number {
   const reverseSteps = [...ALLOWED_DUMBBELL_WEIGHTS].reverse();
   const step = reverseSteps.find((w) => w < weight);
   return step !== undefined ? step : weight;
+}
+
+export interface PersonalRecord {
+  weight: number;
+  reps: number;
+  date: string;
+  isSeconds?: boolean;
+}
+
+export function getPersonalRecord(
+  exerciseId: string,
+  workoutHistory: WorkoutSession[]
+): PersonalRecord | null {
+  let maxWeight = 0;
+  let maxReps = 0;
+  let recordDate = "";
+  let isSeconds = false;
+
+  workoutHistory.forEach((session) => {
+    const we = session.exercises.find((e) => e.exerciseId === exerciseId);
+    if (we) {
+      we.sets.forEach((s) => {
+        if (s.completed && s.type === "working") {
+          // A record is higher weight, or same weight with more reps
+          if (s.weight > maxWeight || (s.weight === maxWeight && s.reps > maxReps)) {
+            maxWeight = s.weight;
+            maxReps = s.reps;
+            recordDate = session.completedAt || session.date;
+            isSeconds = !!s.isSeconds;
+          }
+        }
+      });
+    }
+  });
+
+  if (maxWeight === 0 && maxReps === 0) return null;
+  return { weight: maxWeight, reps: maxReps, date: recordDate, isSeconds };
+}
+
+// Find if any working sets in this active session broke the personal record set BEFORE this session
+export function getBrokenPRsInSession(
+  session: WorkoutSession,
+  workoutHistory: WorkoutSession[]
+): Array<{ exerciseId: string; oldPR: PersonalRecord | null; newPR: PersonalRecord }> {
+  const brokenPRs: Array<{ exerciseId: string; oldPR: PersonalRecord | null; newPR: PersonalRecord }> = [];
+
+  // Exclude current session from historical records search
+  const historyBeforeSession = workoutHistory.filter((w) => w.id !== session.id);
+
+  session.exercises.forEach((we) => {
+    const oldPR = getPersonalRecord(we.exerciseId, historyBeforeSession);
+    
+    // Find the max achieved in current session
+    let sessionMaxWeight = 0;
+    let sessionMaxReps = 0;
+
+    we.sets.forEach((s) => {
+      if (s.completed && s.type === "working") {
+        if (s.weight > sessionMaxWeight || (s.weight === sessionMaxWeight && s.reps > sessionMaxReps)) {
+          sessionMaxWeight = s.weight;
+          sessionMaxReps = s.reps;
+        }
+      }
+    });
+
+    if (sessionMaxWeight > 0 || sessionMaxReps > 0) {
+      const isNewPR = !oldPR || 
+        sessionMaxWeight > oldPR.weight || 
+        (sessionMaxWeight === oldPR.weight && sessionMaxReps > oldPR.reps);
+
+      if (isNewPR) {
+        brokenPRs.push({
+          exerciseId: we.exerciseId,
+          oldPR,
+          newPR: {
+            weight: sessionMaxWeight,
+            reps: sessionMaxReps,
+            date: session.completedAt || session.date
+          }
+        });
+      }
+    }
+  });
+
+  return brokenPRs;
 }

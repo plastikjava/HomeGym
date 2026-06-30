@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Plus, Target, Info, Play, Dumbbell, Timer, Flame } from 'lucide-react';
+import { ChevronDown, Plus, Target, Info, Play, Dumbbell, Timer, Flame, Trophy } from 'lucide-react';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import type {
   Exercise,
@@ -18,7 +18,7 @@ import {
 import SetInput from './SetInput';
 import { useExerciseStore } from '@/stores/exerciseStore';
 import { usePlanStore } from '@/stores/planStore';
-import { fetchExerciseGif, getYouTubeEmbedUrl, PROGRESSION_STEPS, ALLOWED_DUMBBELL_WEIGHTS } from '@/lib/api';
+import { fetchExerciseGif, getYouTubeEmbedUrl, PROGRESSION_STEPS, ALLOWED_DUMBBELL_WEIGHTS, getPersonalRecord } from '@/lib/api';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -48,10 +48,12 @@ export default function ExerciseCard({
   const [expanded, setExpanded] = useState(true);
   const [showDemo, setShowDemo] = useState(false);
   const [showProgressionMenu, setShowProgressionMenu] = useState(false);
+  
+  const workoutHistory = useWorkoutStore((s) => s.workoutHistory);
+  const pr = useMemo(() => getPersonalRecord(exercise.id, workoutHistory), [exercise.id, workoutHistory]);
   const [gifUrl, setGifUrl] = useState<string | null>(exercise.gifUrl || null);
   const [loadingGif, setLoadingGif] = useState(false);
   const updateExercise = useExerciseStore((s) => s.updateExercise);
-  const workoutHistory = useWorkoutStore((s) => s.workoutHistory);
 
   const getReferenceWeight = () => {
     // 1. Try history
@@ -196,6 +198,12 @@ export default function ExerciseCard({
           <Timer size={12} className="text-zinc-500" />
           <span>Pause: {['floor-press', 'overhead-press', 'pull-up', 'glute-bridge', 'hip-thrust', 'single-arm-row'].includes(exercise.id) ? '2 Min.' : '90 Sek.'}</span>
         </div>
+        {pr && (
+          <div className="flex items-center gap-1 text-amber-500/80 font-medium">
+            <Trophy size={11} className="shrink-0" />
+            <span>PR: {pr.isSeconds ? `${pr.reps} sek` : `${pr.weight} kg × ${pr.reps}`}</span>
+          </div>
+        )}
         {planExercise.notes && (
           <span className="italic text-zinc-600 truncate">
             – {planExercise.notes}
