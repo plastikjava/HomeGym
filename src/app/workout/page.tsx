@@ -401,11 +401,12 @@ function snapToDumbbellWeight(target: number): number {
 
       const completedWorkingSets = loggedEx.sets.filter((s) => s.completed && s.type === "working");
       
-      // Success condition: reached at least targetSets and met/exceeded targetReps in all of them
+      // Success condition: reached at least targetSets, met/exceeded targetReps, and used the exact same weight in all of them
       const completedTargetSetsCount = completedWorkingSets.length >= pe.targetSets;
       const allSetsMetRepTarget = completedWorkingSets.length > 0 && completedWorkingSets.every((s) => s.reps >= targetRepsNum);
+      const allSetsSameWeight = completedWorkingSets.length > 0 && completedWorkingSets.every((s) => s.weight === completedWorkingSets[0].weight);
 
-      if (completedTargetSetsCount && allSetsMetRepTarget) {
+      if (completedTargetSetsCount && allSetsMetRepTarget && allSetsSameWeight) {
         // Find current weight (use first completed set weight or targetWeight)
         const currentWeight = pe.targetWeight ?? (completedWorkingSets[0]?.weight || 0);
         const nextStep = getNextProgressionStep(pe.targetSets, targetRepsNum, currentWeight);
