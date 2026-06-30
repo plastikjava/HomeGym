@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
@@ -9,8 +9,10 @@ import {
   Repeat,
   Trophy,
   X,
+  Clipboard,
 } from 'lucide-react';
 import type { Exercise, WorkoutSession } from '@/types';
+import ExportDialog from './ExportDialog';
 
 interface WorkoutSummaryProps {
   session: WorkoutSession;
@@ -60,6 +62,7 @@ export default function WorkoutSummary({
   onClose,
   progressions,
 }: WorkoutSummaryProps) {
+  const [showExport, setShowExport] = useState(true);
   const stats = useMemo(() => {
     let totalSets = 0;
     let totalReps = 0;
@@ -303,20 +306,44 @@ export default function WorkoutSummary({
               </div>
             </div>
 
-            {/* CTA button */}
-            <motion.button
-              type="button"
-              onClick={onClose}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-colors hover:bg-emerald-400 active:bg-emerald-600"
-            >
-              Zum Dashboard
-            </motion.button>
+            {/* CTA buttons */}
+            <div className="mt-6 flex flex-col gap-2">
+              <motion.button
+                type="button"
+                onClick={() => setShowExport(true)}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 py-3 text-sm font-bold text-zinc-300 transition-colors hover:bg-zinc-800"
+              >
+                <Clipboard size={16} />
+                Text-Export kopieren
+              </motion.button>
+
+              <motion.button
+                type="button"
+                onClick={onClose}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-colors hover:bg-emerald-400 active:bg-emerald-600"
+              >
+                Zum Dashboard
+              </motion.button>
+            </div>
           </div>
         </motion.div>
       </motion.div>
+
+      <AnimatePresence>
+        {showExport && (
+          <ExportDialog
+            session={session}
+            exercises={exercises}
+            onClose={() => setShowExport(false)}
+          />
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }

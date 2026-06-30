@@ -23,6 +23,8 @@ interface WorkoutStore {
   updateSet: (exerciseId: string, setId: string, updates: Partial<WorkoutSet>) => void;
   removeSet: (exerciseId: string, setId: string) => void;
   completeSet: (exerciseId: string, setId: string) => void;
+  updateWorkoutSession: (id: string, updates: Partial<WorkoutSession>) => void;
+  deleteWorkoutSession: (id: string) => void;
   // History
   getWorkoutsByDate: (date: string) => WorkoutSession[];
   getLastWorkoutForDay: (planDayId: string) => WorkoutSession | undefined;
@@ -165,6 +167,20 @@ export const useWorkoutStore = create<WorkoutStore>()(
             ),
           },
         });
+      },
+
+      updateWorkoutSession: (id, updates) => {
+        set((state) => ({
+          workoutHistory: state.workoutHistory.map((w) =>
+            w.id === id ? { ...w, ...updates } : w
+          ),
+        }));
+      },
+
+      deleteWorkoutSession: (id) => {
+        set((state) => ({
+          workoutHistory: state.workoutHistory.filter((w) => w.id !== id),
+        }));
       },
 
       getWorkoutsByDate: (date) => {
