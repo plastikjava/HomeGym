@@ -5,6 +5,7 @@ import { Play, Calendar, Dumbbell } from "lucide-react";
 import { motion } from "framer-motion";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { usePlanStore } from "@/stores/planStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import type { PlanDay } from "@/types";
 import { getEstimatedWorkoutDuration } from "@/lib/api";
 
@@ -21,11 +22,87 @@ export function NextWorkoutCard({ planDay, dayIndex, planName }: NextWorkoutCard
 
   const handleStartWorkout = () => {
     if (!activePlanId) return;
-    
-    const workoutExercises = planDay.exercises.map((pe) => ({
-      exerciseId: pe.exerciseId,
-      sets: [],
-    }));
+
+    const generateId = (): string => {
+      return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+    };
+
+    const snapToDumbbellWeight = (target: number): number => {
+      const allowed = [0, 1.5, 3, 6, 7, 8, 9, 11, 12, 13, 14, 16, 18];
+      return allowed.reduce((prev, curr) => 
+        Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev
+      );
+    };
+
+    const deloadActive = useSettingsStore.getState().settings.deloadActive;
+
+    const workoutExercises = planDay.exercises.map((pe) => {
+      const reps = parseInt(pe.targetReps) || 8;
+      const baseWeight = pe.targetWeight ?? 0;
+      const weight = deloadActive ? snapToDumbbellWeight(baseWeight * 0.6) : baseWeight;
+
+      const sets: any[] = [];
+
+      // Check if this exercise needs warmup
+      const needsWarmup = [
+        'floor-press', 'overhead-press', 'pull-up', 
+        'glute-bridge', 'hip-thrust', 'single-arm-row'
+      ].includes(pe.exerciseId);
+
+      if (needsWarmup) {
+        if (pe.exerciseId === 'pull-up') {
+          sets.push({
+            id: generateId() + '-w1',
+            reps: 10,
+            weight: 0,
+            type: 'warmup',
+            completed: false,
+          });
+          sets.push({
+            id: generateId() + '-w2',
+            reps: 5,
+            weight: 0,
+            type: 'warmup',
+            completed: false,
+          });
+        } else {
+          const w1Weight = snapToDumbbellWeight(weight * 0.5);
+          const w2Weight = snapToDumbbellWeight(weight * 0.7);
+
+          sets.push({
+            id: generateId() + '-w1',
+            reps: 10,
+            weight: w1Weight,
+            type: 'warmup',
+            completed: false,
+          });
+          sets.push({
+            id: generateId() + '-w2',
+            reps: 5,
+            weight: w2Weight,
+            type: 'warmup',
+            completed: false,
+          });
+        }
+      }
+
+      // Add regular target working sets (halved if deload active)
+      const targetSetsCount = deloadActive ? Math.max(1, Math.round(pe.targetSets / 2)) : pe.targetSets;
+      for (let i = 0; i < targetSetsCount; i++) {
+        sets.push({
+          id: generateId() + `-r${i}`,
+          reps,
+          weight,
+          type: "working",
+          completed: false,
+        });
+      }
+
+      return {
+        exerciseId: pe.exerciseId,
+        sets,
+      };
+    });
 
     if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(100);
