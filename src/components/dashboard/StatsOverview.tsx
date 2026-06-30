@@ -1,19 +1,19 @@
 "use client";
 
-import { Target, Trophy, Flame, TrendingUp } from "lucide-react";
+import { Target, Trophy, Sparkles, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface StatsOverviewProps {
   workoutsThisWeek: number;
   totalWorkouts: number;
-  currentStreak: number;
+  progressionsCount: number;
   totalVolume: number;
 }
 
 export function StatsOverview({
   workoutsThisWeek,
   totalWorkouts,
-  currentStreak,
+  progressionsCount,
   totalVolume,
 }: StatsOverviewProps) {
   
@@ -33,11 +33,11 @@ export function StatsOverview({
       colorClass: "text-amber-500 bg-amber-500/10 border-amber-500/20",
     },
     {
-      label: "Streak",
-      value: `${currentStreak}🔥`,
-      sub: "Tage in Folge",
-      icon: Flame,
-      colorClass: "text-orange-500 bg-orange-500/10 border-orange-500/20",
+      label: "Progression",
+      value: `${progressionsCount} ✨`,
+      sub: "Aufstiege gesamt",
+      icon: Sparkles,
+      colorClass: "text-purple-500 bg-purple-500/10 border-purple-500/20",
     },
     {
       label: "Volumen",

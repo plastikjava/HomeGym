@@ -62,7 +62,7 @@ export default function DashboardPage() {
 
   const workoutsThisWeek = getWorkoutsThisWeek().length;
   const totalWorkouts = getTotalWorkouts();
-  const currentStreak = getCurrentStreak();
+  const totalProgressions = workoutHistory.reduce((sum, session) => sum + (session.progressionsCount || 0), 0);
 
   return (
     <div className="px-4 pt-4 pb-8 max-w-lg mx-auto space-y-6">
@@ -84,7 +84,7 @@ export default function DashboardPage() {
       <StatsOverview
         workoutsThisWeek={workoutsThisWeek}
         totalWorkouts={totalWorkouts}
-        currentStreak={currentStreak}
+        progressionsCount={totalProgressions}
         totalVolume={Math.round(totalVolume)}
       />
 

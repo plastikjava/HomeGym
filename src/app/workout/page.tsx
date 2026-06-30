@@ -440,7 +440,7 @@ function snapToDumbbellWeight(target: number): number {
       setHeartRate(null);
     }
 
-    completeWorkout(undefined, avgHr, maxHr);
+    completeWorkout(undefined, avgHr, maxHr, applied.length);
     setShowSummary(true);
   }, [activeWorkout, activePlan, currentPlanDay, updatePlanExercise, completeWorkout, exercises, progressionsApplied, heartRates, connectedDevice]);
 

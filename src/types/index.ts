@@ -97,6 +97,7 @@ export interface WorkoutSession {
   notes?: string;
   avgHeartRate?: number;
   maxHeartRate?: number;
+  progressionsCount?: number;
 }
 
 export interface RestTimerConfig {

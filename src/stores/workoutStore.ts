@@ -17,7 +17,7 @@ interface WorkoutStore {
   // Actions
   startWorkout: (planId: string, planDayId: string, exercises: WorkoutExercise[]) => void;
   cancelWorkout: () => void;
-  completeWorkout: (notes?: string, avgHeartRate?: number, maxHeartRate?: number) => void;
+  completeWorkout: (notes?: string, avgHeartRate?: number, maxHeartRate?: number, progressionsCount?: number) => void;
   // Set management
   addSet: (exerciseId: string, set: WorkoutSet) => void;
   updateSet: (exerciseId: string, setId: string, updates: Partial<WorkoutSet>) => void;
@@ -56,7 +56,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
         set({ activeWorkout: null });
       },
 
-      completeWorkout: (notes, avgHeartRate, maxHeartRate) => {
+      completeWorkout: (notes, avgHeartRate, maxHeartRate, progressionsCount) => {
         const { activeWorkout, workoutHistory } = get();
         if (!activeWorkout) return;
 
@@ -66,6 +66,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
           notes: notes || activeWorkout.notes,
           avgHeartRate,
           maxHeartRate,
+          progressionsCount: progressionsCount || 0,
         };
 
         set({
