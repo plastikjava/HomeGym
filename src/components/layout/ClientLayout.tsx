@@ -68,7 +68,22 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
               alert("Kein Backup auf Google Drive gefunden oder Fehler beim Laden.");
             }
           } else if (action === "fit-sync") {
-            const workouts = JSON.parse(localStorage.getItem("homegym-workouts") || "[]");
+            const rawStore = localStorage.getItem("homegym-workouts");
+            let workouts = [];
+            if (rawStore) {
+              try {
+                const parsed = JSON.parse(rawStore);
+                workouts = parsed?.state?.workoutHistory || [];
+              } catch (e) {
+                console.error("Failed to parse workouts:", e);
+              }
+            }
+
+            if (!Array.isArray(workouts) || workouts.length === 0) {
+              alert("Keine Workouts zum Synchronisieren gefunden.");
+              return;
+            }
+
             import("@/lib/googleFit").then(async ({ syncWorkoutsToGoogleFit }) => {
               const success = await syncWorkoutsToGoogleFit(accessToken, workouts);
               if (success) {

@@ -12,7 +12,7 @@ export interface GoogleFitSession {
 
 export async function syncWorkoutsToGoogleFit(accessToken: string, workouts: any[]): Promise<boolean> {
   try {
-    if (!workouts || workouts.length === 0) return true;
+    if (!workouts || !Array.isArray(workouts) || workouts.length === 0) return true;
 
     for (const workout of workouts) {
       if (!workout.completedAt) continue;
