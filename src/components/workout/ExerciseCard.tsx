@@ -18,7 +18,7 @@ import {
 import SetInput from './SetInput';
 import { useExerciseStore } from '@/stores/exerciseStore';
 import { usePlanStore } from '@/stores/planStore';
-import { fetchExerciseGif, getYouTubeEmbedUrl, PROGRESSION_STEPS, ALLOWED_DUMBBELL_WEIGHTS, getPersonalRecord } from '@/lib/api';
+import { fetchExerciseGif, getYouTubeEmbedUrl, PROGRESSION_STEPS, ALLOWED_DUMBBELL_WEIGHTS, getPersonalRecord, getBest1RM } from '@/lib/api';
 
 const categoryBadgeColors: Record<string, string> = {
   chest: "bg-red-500/10 text-red-500 border border-red-500/20 dark:text-red-400",
@@ -63,6 +63,7 @@ export default function ExerciseCard({
   
   const workoutHistory = useWorkoutStore((s) => s.workoutHistory);
   const pr = useMemo(() => getPersonalRecord(exercise.id, workoutHistory), [exercise.id, workoutHistory]);
+  const best1RM = useMemo(() => getBest1RM(exercise.id, workoutHistory), [exercise.id, workoutHistory]);
   const [gifUrl, setGifUrl] = useState<string | null>(exercise.gifUrl || null);
   const [loadingGif, setLoadingGif] = useState(false);
   const updateExercise = useExerciseStore((s) => s.updateExercise);
@@ -206,9 +207,14 @@ export default function ExerciseCard({
           <span>Pause: {['floor-press', 'overhead-press', 'pull-up', 'glute-bridge', 'hip-thrust', 'single-arm-row'].includes(exercise.id) ? '2 Min.' : '90 Sek.'}</span>
         </div>
         {pr && (
-          <div className="flex items-center gap-1 text-amber-500/80 font-medium">
+          <div className="flex items-center gap-1.5 text-amber-500/80 font-medium">
             <Trophy size={11} className="shrink-0" />
             <span>PR: {pr.isSeconds ? `${pr.reps} sek` : `${pr.weight} kg × ${pr.reps}`}</span>
+            {best1RM && !pr.isSeconds && (
+              <span className="text-zinc-500 text-[10px] font-normal">
+                (e1RM: {best1RM.estimated1RM} kg)
+              </span>
+            )}
           </div>
         )}
         {planExercise.notes && (

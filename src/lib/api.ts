@@ -449,3 +449,105 @@ export function getBrokenPRsInSession(
 
   return brokenPRs;
 }
+
+// ─── 1RM Estimation (Epley Formula) ─────────────────────────────────
+export function estimate1RM(weight: number, reps: number): number {
+  if (reps <= 0 || weight <= 0) return 0;
+  if (reps === 1) return weight;
+  // Epley formula: 1RM = weight × (1 + reps / 30)
+  return Math.round(weight * (1 + reps / 30) * 10) / 10;
+}
+
+export function getBest1RM(
+  exerciseId: string,
+  workoutHistory: WorkoutSession[]
+): { estimated1RM: number; weight: number; reps: number; date: string } | null {
+  let best1RM = 0;
+  let bestWeight = 0;
+  let bestReps = 0;
+  let bestDate = "";
+
+  workoutHistory.forEach((session) => {
+    const we = session.exercises.find((e) => e.exerciseId === exerciseId);
+    if (we) {
+      we.sets.forEach((s) => {
+        if (s.completed && s.type === "working" && !s.isSeconds && s.weight > 0) {
+          const e1rm = estimate1RM(s.weight, s.reps);
+          if (e1rm > best1RM) {
+            best1RM = e1rm;
+            bestWeight = s.weight;
+            bestReps = s.reps;
+            bestDate = session.completedAt || session.date;
+          }
+        }
+      });
+    }
+  });
+
+  if (best1RM === 0) return null;
+  return { estimated1RM: best1RM, weight: bestWeight, reps: bestReps, date: bestDate };
+}
+
+// ─── Muscle Group Mapping ───────────────────────────────────────────
+// Maps exercise category to primary muscle groups for volume tracking
+export const MUSCLE_GROUP_TARGETS: Record<string, string[]> = {
+  chest: ['chest'],
+  back: ['back'],
+  shoulders: ['shoulders'],
+  arms: ['arms'],
+  legs: ['legs'],
+  core: ['core'],
+  cardio: [],
+  full_body: ['chest', 'back', 'shoulders', 'arms', 'legs', 'core'],
+};
+
+// Volume landmark zones (sets per muscle group per week)
+export const VOLUME_ZONES = {
+  MEV: 6,   // Minimum Effective Volume
+  MAV_LOW: 12,  // Maximum Adaptive Volume (lower)
+  MAV_HIGH: 20, // Maximum Adaptive Volume (upper)
+  MRV: 25,  // Maximum Recoverable Volume
+};
+
+export function getWeeklyVolumePerMuscle(
+  workoutHistory: WorkoutSession[],
+  exercises: { id: string; category: string }[]
+): Record<string, number> {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - diffToMonday);
+
+  const volumeMap: Record<string, number> = {
+    chest: 0,
+    back: 0,
+    shoulders: 0,
+    arms: 0,
+    legs: 0,
+    core: 0,
+  };
+
+  workoutHistory.forEach((session) => {
+    const sessionDate = new Date(session.completedAt || session.startedAt);
+    if (sessionDate < monday) return; // Only this week
+
+    session.exercises.forEach((we) => {
+      const exerciseMeta = exercises.find((e) => e.id === we.exerciseId);
+      if (!exerciseMeta) return;
+
+      const completedWorkingSets = we.sets.filter((s) => s.completed && s.type === "working").length;
+      const muscleGroups = MUSCLE_GROUP_TARGETS[exerciseMeta.category] || [];
+      
+      muscleGroups.forEach((mg) => {
+        if (volumeMap[mg] !== undefined) {
+          volumeMap[mg] += completedWorkingSets;
+        }
+      });
+    });
+  });
+
+  return volumeMap;
+}
+

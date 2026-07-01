@@ -67,6 +67,16 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
             } else {
               alert("Kein Backup auf Google Drive gefunden oder Fehler beim Laden.");
             }
+          } else if (action === "fit-sync") {
+            const workouts = JSON.parse(localStorage.getItem("homegym-workouts") || "[]");
+            import("@/lib/googleFit").then(async ({ syncWorkoutsToGoogleFit }) => {
+              const success = await syncWorkoutsToGoogleFit(accessToken, workouts);
+              if (success) {
+                alert("Workouts erfolgreich mit Google Fit synchronisiert!");
+              } else {
+                alert("Fehler bei der Synchronisation mit Google Fit.");
+              }
+            });
           }
         });
       }

@@ -12,7 +12,8 @@ import ExerciseCard from "@/components/workout/ExerciseCard";
 import RestTimer from "@/components/workout/RestTimer";
 import WorkoutSummary from "@/components/workout/WorkoutSummary";
 import type { WorkoutExercise, WorkoutSet, SetType, PlanDay } from "@/types";
-import { getEstimatedWorkoutDuration, getNextProgressionStep } from "@/lib/api";
+import { getEstimatedWorkoutDuration, getNextProgressionStep, getPersonalRecord } from "@/lib/api";
+import { useAchievementStore } from "@/stores/achievementStore";
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
@@ -454,9 +455,98 @@ function snapToDumbbellWeight(target: number): number {
     if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate([150, 100, 150]);
     }
+
+    // 🏆 Achievement system check
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(now);
+      monday.setHours(0, 0, 0, 0);
+      monday.setDate(monday.getDate() - diffToMonday);
+
+      const workoutsThisWeekVal = workoutHistory.filter(w => {
+        const d = new Date(w.completedAt || w.startedAt);
+        return d >= monday;
+      }).length + 1;
+
+      let historicalVolume = 0;
+      let historicalProgressions = 0;
+      workoutHistory.forEach(s => {
+        historicalProgressions += s.progressionsCount || 0;
+        s.exercises.forEach(we => {
+          we.sets.forEach(set => {
+            if (set.completed && set.type === 'working') {
+              historicalVolume += set.weight * set.reps;
+            }
+          });
+        });
+      });
+
+      let currentVolume = 0;
+      activeWorkout.exercises.forEach(we => {
+        we.sets.forEach(set => {
+          if (set.completed && set.type === 'working') {
+            currentVolume += set.weight * set.reps;
+          }
+        });
+      });
+
+      const totalVolume = historicalVolume + currentVolume;
+      const totalProgressions = historicalProgressions + applied.length;
+
+      const historyWithCurrent = [
+        ...workoutHistory,
+        {
+          ...activeWorkout,
+          completedAt: now.toISOString()
+        }
+      ];
+
+      let totalPRs = 0;
+      exercises.forEach(ex => {
+        if (getPersonalRecord(ex.id, historyWithCurrent)) {
+          totalPRs++;
+        }
+      });
+
+      const settings = useSettingsStore.getState().settings;
+      const deloadEverUsed = !!settings.deloadActive || workoutHistory.some(s => s.notes?.toLowerCase().includes('deload'));
+
+      const fourWeeksAgo = new Date();
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+      const completedDates = historyWithCurrent
+        .map(w => w.completedAt || w.startedAt)
+        .filter(d => d && new Date(d) >= fourWeeksAgo)
+        .map(d => new Date(d).getTime())
+        .sort((a, b) => a - b);
+
+      let longestGapDays = 0;
+      if (completedDates.length >= 2) {
+        for (let i = 1; i < completedDates.length; i++) {
+          const diff = (completedDates[i] - completedDates[i - 1]) / (1000 * 60 * 60 * 24);
+          if (diff > longestGapDays) {
+            longestGapDays = diff;
+          }
+        }
+      }
+
+      useAchievementStore.getState().checkAndUnlockAchievements({
+        totalWorkouts: workoutHistory.length + 1,
+        workoutsThisWeek: workoutsThisWeekVal,
+        totalVolume,
+        totalProgressions,
+        totalPRs,
+        deloadEverUsed,
+        longestGapDays
+      });
+    } catch (err) {
+      console.error("Error updating achievements:", err);
+    }
+
     completeWorkout(undefined, avgHr, maxHr, applied.length);
     setShowSummary(true);
-  }, [activeWorkout, activePlan, currentPlanDay, updatePlanExercise, completeWorkout, exercises, progressionsApplied, heartRates, connectedDevice]);
+  }, [activeWorkout, activePlan, currentPlanDay, updatePlanExercise, completeWorkout, exercises, progressionsApplied, heartRates, connectedDevice, workoutHistory]);
 
   const handleCancelWorkout = useCallback(() => {
     if (window.confirm("Workout wirklich abbrechen? Alle Daten gehen verloren.")) {

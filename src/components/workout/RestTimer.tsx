@@ -68,18 +68,24 @@ export default function RestTimer({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCompleted = useRef(false);
 
+  // Request notification permission on timer mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
   // Reset when duration or active state changes
   useEffect(() => {
     if (isActive) {
       setRemaining(duration);
       setTotalDuration(duration);
-      hasCompleted.current = false;
-      setPulsing(false);
       setIsPaused(false);
+      hasCompleted.current = false;
     }
   }, [duration, isActive]);
 
-  // Countdown interval
+  // Handle countdown interval
   useEffect(() => {
     if (!isActive || isPaused) {
       if (intervalRef.current) {
@@ -120,13 +126,28 @@ export default function RestTimer({
         navigator.vibrate([200, 100, 200]);
       }
 
+      // Send browser notification (bridges to Pixel Watch automatically!)
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+        try {
+          new Notification("Pause beendet! 💪", {
+            body: setType === 'warmup' ? "Aufwärmsatz geschafft. Weiter geht's!" : "Zeit für den nächsten Arbeitssatz!",
+            icon: "/icon.png",
+            vibrate: [200, 100, 200],
+            tag: "rest-timer-notification",
+            requireInteraction: true
+          } as any);
+        } catch (err) {
+          console.error("Failed to show notification:", err);
+        }
+      }
+
       const timeout = setTimeout(() => {
         onComplete();
         setPulsing(false);
       }, 800);
       return () => clearTimeout(timeout);
     }
-  }, [remaining, isActive, onComplete]);
+  }, [remaining, isActive, onComplete, setType]);
 
   const handleExtend = useCallback(() => {
     setRemaining((prev) => prev + 30);

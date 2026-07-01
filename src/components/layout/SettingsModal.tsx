@@ -12,6 +12,7 @@ import {
   Check,
   AlertTriangle,
   Info,
+  Activity,
 } from 'lucide-react';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { defaultEquipment } from '@/data/defaultPlans';
@@ -131,6 +132,23 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }
     sessionStorage.setItem('google_drive_sync_action', 'backup');
     triggerGoogleAuth(settings.googleClientId);
+  };
+
+  const handleGoogleFitSync = () => {
+    if (!settings.googleClientId) {
+      alert('Bitte trage zuerst eine Google Client-ID ein.');
+      return;
+    }
+    sessionStorage.setItem('google_drive_sync_action', 'fit-sync');
+    const redirectUri = window.location.origin + '/';
+    const scope = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/fitness.activity.write';
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+      settings.googleClientId
+    )}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}&response_type=token&scope=${encodeURIComponent(scope)}`;
+
+    window.location.href = authUrl;
   };
 
   return (
@@ -388,6 +406,14 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         >
                           <Upload className="w-4 h-4" />
                           Laden (Restore)
+                        </button>
+                        <button
+                          onClick={handleGoogleFitSync}
+                          disabled={syncLoading}
+                          className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 py-2.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-40 mt-1"
+                        >
+                          <Activity className="w-4 h-4" />
+                          Workouts in Google Fit eintragen
                         </button>
                       </div>
                     </div>

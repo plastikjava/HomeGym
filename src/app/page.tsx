@@ -9,6 +9,9 @@ import { NextWorkoutCard } from "@/components/dashboard/NextWorkoutCard";
 import { StatsOverview } from "@/components/dashboard/StatsOverview";
 import { RecentWorkouts } from "@/components/dashboard/RecentWorkouts";
 import { TrainerAI } from "@/components/dashboard/TrainerAI";
+import { MuscleHeatmap } from "@/components/dashboard/MuscleHeatmap";
+import { AchievementShowcase } from "@/components/dashboard/AchievementShowcase";
+import { getWeeklyVolumePerMuscle } from "@/lib/api";
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
@@ -64,6 +67,7 @@ export default function DashboardPage() {
   const workoutsThisWeek = getWorkoutsThisWeek().length;
   const totalWorkouts = getTotalWorkouts();
   const totalProgressions = workoutHistory.reduce((sum, session) => sum + (session.progressionsCount || 0), 0);
+  const weeklyVolume = getWeeklyVolumePerMuscle(workoutHistory, exercises);
 
   return (
     <div className="px-4 pt-4 pb-8 max-w-lg mx-auto space-y-6">
@@ -99,6 +103,12 @@ export default function DashboardPage() {
           initialDayIndex={nextDayIndex}
         />
       )}
+
+      {/* Muscle Heatmap */}
+      <MuscleHeatmap weeklyVolume={weeklyVolume} />
+
+      {/* Achievements */}
+      <AchievementShowcase />
 
       {/* Recent Workouts */}
       <RecentWorkouts workouts={workoutHistory} exercises={exercises} />
