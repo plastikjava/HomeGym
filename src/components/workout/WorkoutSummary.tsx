@@ -12,7 +12,7 @@ import {
   Clipboard,
 } from 'lucide-react';
 import type { Exercise, WorkoutSession } from '@/types';
-import ExportDialog from './ExportDialog';
+import ExportDialog, { generateWorkoutExportText } from './ExportDialog';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { getBrokenPRsInSession } from '@/lib/api';
 
@@ -64,7 +64,19 @@ export default function WorkoutSummary({
   onClose,
   progressions,
 }: WorkoutSummaryProps) {
-  const [showExport, setShowExport] = useState(true);
+  const [showExport, setShowExport] = useState(false);
+  
+  // Auto-copy to clipboard on mount
+  useState(() => {
+    if (typeof window !== "undefined") {
+      const exportText = generateWorkoutExportText(session, exercises);
+      if (exportText.trim() && navigator.clipboard) {
+        navigator.clipboard.writeText(exportText)
+          .catch((err) => console.warn("Failed to auto-copy to clipboard:", err));
+      }
+    }
+  });
+
   const workoutHistory = useWorkoutStore((s) => s.workoutHistory);
   const brokenPRs = useMemo(() => getBrokenPRsInSession(session, workoutHistory), [session, workoutHistory]);
   const stats = useMemo(() => {
@@ -145,20 +157,20 @@ export default function WorkoutSummary({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           transition={{ type: 'spring', damping: 22, stiffness: 260 }}
-          className="relative w-full max-w-sm overflow-hidden rounded-3xl"
+          className="relative w-full max-w-sm max-h-[90vh] overflow-hidden rounded-3xl flex flex-col"
         >
           {/* Gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800" />
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.08] via-transparent to-blue-500/[0.06]" />
-          <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.1] rounded-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.08] via-transparent to-blue-500/[0.06] pointer-events-none" />
+          <div className="absolute inset-0 ring-1 ring-inset ring-white/[0.1] rounded-3xl pointer-events-none" />
 
           {/* Content */}
-          <div className="relative px-6 pb-6 pt-5">
+          <div className="relative px-6 pb-6 pt-5 overflow-y-auto flex-1 z-10">
             {/* Close button */}
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-zinc-400 hover:bg-white/[0.12] transition-colors"
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-zinc-400 hover:bg-white/[0.12] transition-colors z-20"
               aria-label="Schließen"
             >
               <X size={16} />

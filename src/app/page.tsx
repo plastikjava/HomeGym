@@ -95,9 +95,8 @@ export default function DashboardPage() {
       {/* Next Workout Card */}
       {activePlan && nextDay && (
         <NextWorkoutCard
-          planDay={nextDay}
-          dayIndex={nextDayIndex}
-          planName={activePlan.name}
+          plan={activePlan}
+          initialDayIndex={nextDayIndex}
         />
       )}
 

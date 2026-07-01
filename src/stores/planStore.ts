@@ -39,12 +39,28 @@ export const usePlanStore = create<PlanStore>()(
           updatedPlans = [...updatedPlans, defaultSBSHypertrophyLight];
         }
         
+        // Migrate all plans to start at 3 sets and 8 reps (except timed exercises)
+        const migratedPlans = updatedPlans.map((plan) => ({
+          ...plan,
+          days: plan.days.map((day) => ({
+            ...day,
+            exercises: day.exercises.map((ex) => {
+              const isTimed = ex.targetReps.includes('s');
+              return {
+                ...ex,
+                targetSets: 3,
+                targetReps: isTimed ? ex.targetReps : '8',
+              };
+            }),
+          })),
+        }));
+        
         const activePlanId = get().activePlanId === 'default-3split' || !get().activePlanId
           ? defaultSBSHypertrophy.id
           : get().activePlanId;
 
         set({
-          plans: updatedPlans,
+          plans: migratedPlans,
           activePlanId: activePlanId,
           initialized: true,
         });

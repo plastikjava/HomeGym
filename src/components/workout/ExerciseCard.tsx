@@ -101,7 +101,7 @@ export default function ExerciseCard({
   }, [showDemo, gifUrl, exercise.nameEn, exercise.id, exercise.isCustom, updateExercise]);
 
   const sets = workoutExercise.sets;
-  const completedSets = sets.filter((s) => s.completed).length;
+  const completedSets = sets.filter((s) => s.completed && s.type === 'working').length;
   const totalTargetSets = planExercise.targetSets;
   const progress =
     totalTargetSets > 0
@@ -115,8 +115,7 @@ export default function ExerciseCard({
       layout
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] backdrop-blur-xl"
-      style={{ borderLeft: `3px solid ${borderColor}` }}
+      className={`relative overflow-hidden rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] backdrop-blur-xl border-l-[3.5px] ${borderColor}`}
     >
       {/* ─── Header ─────────────────────────────────────────────── */}
       <button
