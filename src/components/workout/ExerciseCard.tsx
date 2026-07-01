@@ -20,6 +20,18 @@ import { useExerciseStore } from '@/stores/exerciseStore';
 import { usePlanStore } from '@/stores/planStore';
 import { fetchExerciseGif, getYouTubeEmbedUrl, PROGRESSION_STEPS, ALLOWED_DUMBBELL_WEIGHTS, getPersonalRecord } from '@/lib/api';
 
+const categoryBadgeColors: Record<string, string> = {
+  chest: "bg-red-500/10 text-red-500 border border-red-500/20 dark:text-red-400",
+  back: "bg-blue-500/10 text-blue-500 border border-blue-500/20 dark:text-blue-400",
+  shoulders: "bg-purple-500/10 text-purple-500 border border-purple-500/20 dark:text-purple-400",
+  arms: "bg-amber-500/10 text-amber-500 border border-amber-500/20 dark:text-amber-400",
+  legs: "bg-green-500/10 text-green-500 border border-green-500/20 dark:text-green-400",
+  core: "bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 dark:text-cyan-400",
+  cardio: "bg-pink-500/10 text-pink-500 border border-pink-500/20 dark:text-pink-400",
+  full_body: "bg-teal-500/10 text-teal-500 border border-teal-500/20 dark:text-teal-400",
+  other: "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20 dark:text-zinc-400",
+};
+
 interface ExerciseCardProps {
   exercise: Exercise;
   planExercise: PlanExercise;
@@ -108,14 +120,12 @@ export default function ExerciseCard({
       ? Math.min(completedSets / totalTargetSets, 1)
       : 0;
 
-  const borderColor = categoryColors[exercise.category] ?? categoryColors.other;
-
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative overflow-hidden rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] backdrop-blur-xl border-l-[3.5px] ${borderColor}`}
+      className="relative overflow-hidden rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] backdrop-blur-xl"
     >
       {/* ─── Header ─────────────────────────────────────────────── */}
       <button
@@ -145,11 +155,9 @@ export default function ExerciseCard({
               </span>
             ))}
             <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-              style={{
-                backgroundColor: `${borderColor}20`,
-                color: borderColor,
-              }}
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border flex-shrink-0 ${
+                categoryBadgeColors[exercise.category] ?? categoryBadgeColors.other
+              }`}
             >
               {categoryLabels[exercise.category]}
             </span>
