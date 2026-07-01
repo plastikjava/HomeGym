@@ -379,9 +379,9 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </div>
                   </div>
 
-                  {settings.googleClientId && (
-                    <div className="space-y-2 pt-2 border-t border-zinc-900">
-                      <div className="flex justify-between items-center text-[10px]">
+                  <div className="space-y-2 pt-2 border-t border-zinc-900">
+                    {settings.googleClientId && (
+                      <div className="flex justify-between items-center text-[10px] mb-1">
                         <span className="text-zinc-500">Letzter Sync:</span>
                         <span className="font-mono text-zinc-300">
                           {settings.lastGoogleSync
@@ -389,35 +389,35 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                             : 'Nie'}
                         </span>
                       </div>
+                    )}
 
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <button
-                          onClick={handleGoogleBackup}
-                          disabled={syncLoading}
-                          className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-500/20 bg-blue-500/10 py-2.5 text-xs font-bold text-blue-400 transition-colors hover:bg-blue-500/20 disabled:opacity-40"
-                        >
-                          <Cloud className="w-4 h-4" />
-                          Jetzt sichern
-                        </button>
-                        <button
-                          onClick={handleGoogleRestore}
-                          disabled={syncLoading}
-                          className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 text-xs font-bold text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-40"
-                        >
-                          <Upload className="w-4 h-4" />
-                          Laden (Restore)
-                        </button>
-                        <button
-                          onClick={handleGoogleFitSync}
-                          disabled={syncLoading}
-                          className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 py-2.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-40 mt-1"
-                        >
-                          <Activity className="w-4 h-4" />
-                          Workouts in Google Fit eintragen
-                        </button>
-                      </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={handleGoogleBackup}
+                        disabled={syncLoading}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-500/20 bg-blue-500/10 py-2.5 text-xs font-bold text-blue-400 transition-colors hover:bg-blue-500/20 disabled:opacity-40"
+                      >
+                        <Cloud className="w-4 h-4" />
+                        Jetzt sichern
+                      </button>
+                      <button
+                        onClick={handleGoogleRestore}
+                        disabled={syncLoading}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900 py-2.5 text-xs font-bold text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-40"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Laden (Restore)
+                      </button>
+                      <button
+                        onClick={handleGoogleFitSync}
+                        disabled={syncLoading}
+                        className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 py-2.5 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-40 mt-1"
+                      >
+                        <Activity className="w-4 h-4" />
+                        Workouts in Google Fit eintragen
+                      </button>
                     </div>
-                  )}
+                  </div>
 
                   {/* Manual Sync Tutorial Trigger */}
                   <div className="flex gap-2 items-start p-3 rounded-xl bg-blue-500/[0.04] border border-blue-500/10 text-[10px] text-zinc-400">

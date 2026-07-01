@@ -128,16 +128,34 @@ export default function RestTimer({
 
       // Send browser notification (bridges to Pixel Watch automatically!)
       if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-        try {
-          new Notification("Pause beendet! 💪", {
-            body: setType === 'warmup' ? "Aufwärmsatz geschafft. Weiter geht's!" : "Zeit für den nächsten Arbeitssatz!",
-            icon: "/icon.png",
-            vibrate: [200, 100, 200],
-            tag: "rest-timer-notification",
-            requireInteraction: true
-          } as any);
-        } catch (err) {
-          console.error("Failed to show notification:", err);
+        const title = "Pause beendet! 💪";
+        const options = {
+          body: setType === 'warmup' ? "Aufwärmsatz geschafft. Weiter geht's!" : "Zeit für den nächsten Arbeitssatz!",
+          icon: "/icon.png",
+          vibrate: [200, 100, 200],
+          tag: "rest-timer-notification",
+          requireInteraction: true
+        };
+
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.ready
+            .then((registration) => {
+              registration.showNotification(title, options as any);
+            })
+            .catch((err) => {
+              console.warn("ServiceWorker notification failed, falling back:", err);
+              try {
+                new Notification(title, options as any);
+              } catch (e) {
+                console.error(e);
+              }
+            });
+        } else {
+          try {
+            new Notification(title, options as any);
+          } catch (err) {
+            console.error("Failed to show standard notification:", err);
+          }
         }
       }
 
