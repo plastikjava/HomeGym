@@ -68,6 +68,11 @@ export default function RestTimer({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCompleted = useRef(false);
 
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   // Request notification permission on timer mount
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
@@ -160,12 +165,12 @@ export default function RestTimer({
       }
 
       const timeout = setTimeout(() => {
-        onComplete();
+        onCompleteRef.current();
         setPulsing(false);
       }, 800);
       return () => clearTimeout(timeout);
     }
-  }, [remaining, isActive, onComplete, setType]);
+  }, [remaining, isActive, setType]);
 
   const handleExtend = useCallback(() => {
     setRemaining((prev) => prev + 30);

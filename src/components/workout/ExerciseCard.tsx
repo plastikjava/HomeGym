@@ -473,6 +473,7 @@ export default function ExerciseCard({
                     onComplete={() => onCompleteSet(set.id)}
                     onRemove={() => onRemoveSet(set.id)}
                     isPullUp={exercise.id === 'pull-up'}
+                    isTimedExercise={['wall-sit', 'plank'].includes(exercise.id)}
                   />
                 ))}
               </AnimatePresence>
