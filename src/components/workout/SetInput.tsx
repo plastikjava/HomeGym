@@ -91,11 +91,11 @@ export default function SetInput({
 
   const handleRepsChange = useCallback(
     (delta: number) => {
-      const step = isSecondsMode ? 5 : 1;
+      const step = 1; // Always increment/decrement by 1 (both for reps and seconds!)
       const next = Math.max(0, set.reps + delta * step);
       onUpdate({ reps: next });
     },
-    [set.reps, isSecondsMode, onUpdate],
+    [set.reps, onUpdate],
   );
 
   const handleWeightChange = useCallback(

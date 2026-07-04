@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
@@ -66,8 +66,8 @@ export default function WorkoutSummary({
 }: WorkoutSummaryProps) {
   const [showExport, setShowExport] = useState(false);
   
-  // Auto-copy to clipboard on mount
-  useState(() => {
+  // Auto-copy to clipboard on mount/session update (prevents race conditions)
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const exportText = generateWorkoutExportText(session, exercises);
       if (exportText.trim() && navigator.clipboard) {
@@ -75,7 +75,7 @@ export default function WorkoutSummary({
           .catch((err) => console.warn("Failed to auto-copy to clipboard:", err));
       }
     }
-  });
+  }, [session.id, exercises]);
 
   const workoutHistory = useWorkoutStore((s) => s.workoutHistory);
   const brokenPRs = useMemo(() => getBrokenPRsInSession(session, workoutHistory), [session, workoutHistory]);
