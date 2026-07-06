@@ -270,8 +270,9 @@ function snapToDumbbellWeight(target: number): number {
       const workoutExercises: WorkoutExercise[] = day.exercises.map((pe) => {
         const reps = parseInt(pe.targetReps) || 8;
         
-        // Try to get weight from last completed workout history for this exercise
+        // Try to get weight and sets from last completed workout history for this exercise
         let lastLoggedWeight: number | undefined;
+        let lastLoggedSets: any[] = [];
         const workoutHistory = useWorkoutStore.getState().workoutHistory;
         for (const session of workoutHistory) {
           const matchedEx = session.exercises.find((e) => e.exerciseId === pe.exerciseId);
@@ -279,6 +280,7 @@ function snapToDumbbellWeight(target: number): number {
             const completedWorkingSets = matchedEx.sets.filter((s) => s.completed && s.type === "working");
             if (completedWorkingSets.length > 0) {
               lastLoggedWeight = completedWorkingSets[0].weight;
+              lastLoggedSets = completedWorkingSets;
               break;
             }
           }
@@ -335,10 +337,16 @@ function snapToDumbbellWeight(target: number): number {
         // Add regular target working sets (halved if deload active)
         const targetSetsCount = deloadActive ? Math.max(1, Math.round(pe.targetSets / 2)) : pe.targetSets;
         for (let i = 0; i < targetSetsCount; i++) {
+          let setReps = reps;
+          const isTimed = ['wall-sit', 'plank'].includes(pe.exerciseId);
+          if (isTimed && lastLoggedSets[i]) {
+            setReps = lastLoggedSets[i].reps;
+          }
+
           sets.push({
             id: generateId() + `-r${i}`,
-            reps,
-            weight,
+            reps: setReps,
+            weight: isTimed ? 0 : weight,
             type: "working",
             completed: false,
           });
