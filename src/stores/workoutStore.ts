@@ -26,6 +26,7 @@ interface WorkoutStore {
   completeSet: (exerciseId: string, setId: string) => void;
   updateWorkoutSession: (id: string, updates: Partial<WorkoutSession>) => void;
   deleteWorkoutSession: (id: string) => void;
+  syncActiveWorkoutExerciseSets: (exerciseId: string, targetSets: number, targetReps: string, targetWeight?: number) => void;
   // History
   getWorkoutsByDate: (date: string) => WorkoutSession[];
   getLastWorkoutForDay: (planDayId: string) => WorkoutSession | undefined;
@@ -203,6 +204,73 @@ export const useWorkoutStore = create<WorkoutStore>()(
         set((state) => ({
           workoutHistory: state.workoutHistory.filter((w) => w.id !== id),
         }));
+      },
+
+      syncActiveWorkoutExerciseSets: (exerciseId, targetSets, targetReps, targetWeight) => {
+        const { activeWorkout } = get();
+        if (!activeWorkout) return;
+
+        const updatedExercises = activeWorkout.exercises.map((we) => {
+          if (we.exerciseId !== exerciseId) return we;
+
+          // 1. Separate warmup and working sets
+          const warmupSets = we.sets.filter((s) => s.type === 'warmup');
+          const workingSets = we.sets.filter((s) => s.type === 'working');
+
+          // 2. Adjust working sets count to targetSets
+          let newWorkingSets = [...workingSets];
+          const diff = targetSets - newWorkingSets.length;
+
+          if (diff > 0) {
+            // Add sets
+            for (let i = 0; i < diff; i++) {
+              newWorkingSets.push({
+                id: `set_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                reps: parseInt(targetReps) || 8,
+                weight: targetWeight ?? 0,
+                type: 'working',
+                completed: false,
+              });
+            }
+          } else if (diff < 0) {
+            // Remove sets from the end, but prefer keeping uncompleted ones first
+            const removeCount = Math.abs(diff);
+            let removed = 0;
+            for (let i = newWorkingSets.length - 1; i >= 0; i--) {
+              if (removed >= removeCount) break;
+              if (!newWorkingSets[i].completed) {
+                newWorkingSets.splice(i, 1);
+                removed++;
+              }
+            }
+            while (removed < removeCount && newWorkingSets.length > 0) {
+              newWorkingSets.pop();
+              removed++;
+            }
+          }
+
+          // 3. Update target reps/weight for uncompleted working sets
+          newWorkingSets = newWorkingSets.map((s) => {
+            if (s.completed) return s;
+            return {
+              ...s,
+              reps: parseInt(targetReps) || 8,
+              weight: targetWeight ?? s.weight,
+            };
+          });
+
+          return {
+            ...we,
+            sets: [...warmupSets, ...newWorkingSets],
+          };
+        });
+
+        set({
+          activeWorkout: {
+            ...activeWorkout,
+            exercises: updatedExercises,
+          },
+        });
       },
 
       getWorkoutsByDate: (date) => {

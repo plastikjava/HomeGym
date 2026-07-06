@@ -267,6 +267,12 @@ export default function ExerciseCard({
                               exercise.id,
                               { targetSets: step.sets, targetReps: String(step.reps) }
                             );
+                            useWorkoutStore.getState().syncActiveWorkoutExerciseSets(
+                              exercise.id,
+                              step.sets,
+                              String(step.reps),
+                              planExercise.targetWeight
+                            );
                           }
                         }}
                         className={`py-1 rounded text-center font-medium transition-colors ${
@@ -305,6 +311,12 @@ export default function ExerciseCard({
                             exercise.id,
                             { targetWeight: nextWeight }
                           );
+                          useWorkoutStore.getState().syncActiveWorkoutExerciseSets(
+                            exercise.id,
+                            planExercise.targetSets,
+                            planExercise.targetReps,
+                            nextWeight
+                          );
                         }
                       }}
                       className="w-8 h-8 rounded-lg bg-white/[0.05] flex items-center justify-center font-bold text-zinc-300 hover:bg-white/[0.1] text-sm"
@@ -329,6 +341,12 @@ export default function ExerciseCard({
                             activeWorkout.planDayId,
                             exercise.id,
                             { targetWeight: nextWeight }
+                          );
+                          useWorkoutStore.getState().syncActiveWorkoutExerciseSets(
+                            exercise.id,
+                            planExercise.targetSets,
+                            planExercise.targetReps,
+                            nextWeight
                           );
                         }
                       }}
