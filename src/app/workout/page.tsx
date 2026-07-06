@@ -574,7 +574,7 @@ function snapToDumbbellWeight(target: number): number {
 
   // Show summary if workout just completed
   if (showSummary && workoutHistory.length > 0) {
-    const lastSession = workoutHistory[workoutHistory.length - 1];
+    const lastSession = workoutHistory[0];
     return (
       <WorkoutSummary
         session={lastSession}
