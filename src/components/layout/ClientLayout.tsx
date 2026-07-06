@@ -15,6 +15,10 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const initExercises = useExerciseStore((s) => s.initializeExercises);
   const initPlans = usePlanStore((s) => s.initializePlans);
 
+  const activePlan = usePlanStore((s) => s.plans.find((p) => p.id === s.activePlanId));
+  const plansInitialized = usePlanStore((s) => s.initialized);
+  const updatePlanExercise = usePlanStore((s) => s.updatePlanExercise);
+
   // Initialize stores and apply theme on mount
   useEffect(() => {
     // Rehydrate stores from localStorage first to prevent data resets
@@ -25,47 +29,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
     initExercises();
     initPlans();
-
-    // Auto-align progression of exercises appearing on multiple days in the active plan (e.g. Overhead Press)
-    setTimeout(() => {
-      const activePlan = usePlanStore.getState().getActivePlan();
-      if (activePlan) {
-        const maxTargets: Record<string, { sets: number; reps: string; weight?: number }> = {};
-        
-        activePlan.days.forEach((day) => {
-          day.exercises.forEach((ex) => {
-            const currentMax = maxTargets[ex.exerciseId];
-            const weight = ex.targetWeight || 0;
-            const repsNum = parseInt(ex.targetReps) || 0;
-
-            if (!currentMax) {
-              maxTargets[ex.exerciseId] = { sets: ex.targetSets, reps: ex.targetReps, weight };
-            } else {
-              const currentRepsNum = parseInt(currentMax.reps) || 0;
-              const currentVolume = currentMax.sets * currentRepsNum;
-              const newVolume = ex.targetSets * repsNum;
-
-              if (weight > (currentMax.weight || 0) || (weight === currentMax.weight && newVolume > currentVolume)) {
-                maxTargets[ex.exerciseId] = { sets: ex.targetSets, reps: ex.targetReps, weight };
-              }
-            }
-          });
-        });
-
-        activePlan.days.forEach((day) => {
-          day.exercises.forEach((ex) => {
-            const max = maxTargets[ex.exerciseId];
-            if (max && (ex.targetSets !== max.sets || ex.targetReps !== max.reps || ex.targetWeight !== max.weight)) {
-              usePlanStore.getState().updatePlanExercise(activePlan.id, day.id, ex.exerciseId, {
-                targetSets: max.sets,
-                targetReps: max.reps,
-                targetWeight: max.weight,
-              });
-            }
-          });
-        });
-      }
-    }, 100);
 
     // Intercept Google OAuth redirects
     if (window.location.hash) {
@@ -140,6 +103,61 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
     setMounted(true);
   }, [initExercises, initPlans]);
+
+  // Auto-align progression of exercises appearing on multiple days in the active plan (e.g. Overhead Press)
+  useEffect(() => {
+    if (!mounted || !plansInitialized || !activePlan) return;
+
+    const maxTargets: Record<string, { sets: number; reps: string; weight?: number }> = {};
+    let hasMismatches = false;
+
+    // 1. Find max target values
+    activePlan.days.forEach((day) => {
+      day.exercises.forEach((ex) => {
+        const currentMax = maxTargets[ex.exerciseId];
+        const weight = ex.targetWeight || 0;
+        const repsNum = parseInt(ex.targetReps) || 0;
+
+        if (!currentMax) {
+          maxTargets[ex.exerciseId] = { sets: ex.targetSets, reps: ex.targetReps, weight };
+        } else {
+          const currentRepsNum = parseInt(currentMax.reps) || 0;
+          const currentVolume = currentMax.sets * currentRepsNum;
+          const newVolume = ex.targetSets * repsNum;
+
+          if (weight > (currentMax.weight || 0) || (weight === currentMax.weight && newVolume > currentVolume)) {
+            maxTargets[ex.exerciseId] = { sets: ex.targetSets, reps: ex.targetReps, weight };
+          }
+        }
+      });
+    });
+
+    // 2. Check if we need to update anything
+    activePlan.days.forEach((day) => {
+      day.exercises.forEach((ex) => {
+        const max = maxTargets[ex.exerciseId];
+        if (max && (ex.targetSets !== max.sets || ex.targetReps !== max.reps || ex.targetWeight !== max.weight)) {
+          hasMismatches = true;
+        }
+      });
+    });
+
+    if (hasMismatches) {
+      // Apply updates to align them
+      activePlan.days.forEach((day) => {
+        day.exercises.forEach((ex) => {
+          const max = maxTargets[ex.exerciseId];
+          if (max && (ex.targetSets !== max.sets || ex.targetReps !== max.reps || ex.targetWeight !== max.weight)) {
+            updatePlanExercise(activePlan.id, day.id, ex.exerciseId, {
+              targetSets: max.sets,
+              targetReps: max.reps,
+              targetWeight: max.weight,
+            });
+          }
+        });
+      });
+    }
+  }, [mounted, plansInitialized, activePlan, updatePlanExercise]);
 
   // Apply dark/light class to html element
   useEffect(() => {
