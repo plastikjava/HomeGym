@@ -27,6 +27,8 @@ export const usePlanStore = create<PlanStore>()(
       activePlanId: null,
       initialized: false,
       initializePlans: () => {
+        if (get().initialized) return;
+
         const currentPlans = get().plans.filter((p) => p.id !== 'default-3split');
         const hasSBS = currentPlans.some((p) => p.id === 'sbs-hypertrophy');
         const hasSBSLight = currentPlans.some((p) => p.id === 'sbs-hypertrophy-light');
