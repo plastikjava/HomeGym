@@ -10,6 +10,13 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+function snapToDumbbellWeight(target: number): number {
+  const allowed = [0, 1.5, 3, 6, 7, 8, 9, 11, 12, 13, 14, 16, 18];
+  return allowed.reduce((prev, curr) =>
+    Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev
+  );
+}
+
 interface WorkoutStore {
   // Active workout
   activeWorkout: WorkoutSession | null;
@@ -214,8 +221,21 @@ export const useWorkoutStore = create<WorkoutStore>()(
           if (we.exerciseId !== exerciseId) return we;
 
           // 1. Separate warmup and working sets
-          const warmupSets = we.sets.filter((s) => s.type === 'warmup');
+          let warmupSets = we.sets.filter((s) => s.type === 'warmup');
           const workingSets = we.sets.filter((s) => s.type === 'working');
+
+          // Dynamic warmup weights: Satz 1 50%, Satz 2 70% of working weight
+          if (targetWeight !== undefined && we.exerciseId !== 'pull-up') {
+            const w1Weight = snapToDumbbellWeight(targetWeight * 0.5);
+            const w2Weight = snapToDumbbellWeight(targetWeight * 0.7);
+
+            warmupSets = warmupSets.map((s, idx) => {
+              if (s.completed) return s;
+              if (idx === 0) return { ...s, weight: w1Weight };
+              if (idx === 1) return { ...s, weight: w2Weight };
+              return s;
+            });
+          }
 
           // 2. Adjust working sets count to targetSets
           let newWorkingSets = [...workingSets];

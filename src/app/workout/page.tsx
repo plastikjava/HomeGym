@@ -269,7 +269,22 @@ function snapToDumbbellWeight(target: number): number {
 
       const workoutExercises: WorkoutExercise[] = day.exercises.map((pe) => {
         const reps = parseInt(pe.targetReps) || 8;
-        const baseWeight = pe.targetWeight ?? 0;
+        
+        // Try to get weight from last completed workout history for this exercise
+        let lastLoggedWeight: number | undefined;
+        const workoutHistory = useWorkoutStore.getState().workoutHistory;
+        for (const session of workoutHistory) {
+          const matchedEx = session.exercises.find((e) => e.exerciseId === pe.exerciseId);
+          if (matchedEx) {
+            const completedWorkingSets = matchedEx.sets.filter((s) => s.completed && s.type === "working");
+            if (completedWorkingSets.length > 0) {
+              lastLoggedWeight = completedWorkingSets[0].weight;
+              break;
+            }
+          }
+        }
+
+        const baseWeight = lastLoggedWeight !== undefined ? lastLoggedWeight : (pe.targetWeight ?? 0);
         const weight = deloadActive ? snapToDumbbellWeight(baseWeight * 0.6) : baseWeight;
 
         const sets: WorkoutSet[] = [];
