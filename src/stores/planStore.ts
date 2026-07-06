@@ -152,18 +152,14 @@ export const usePlanStore = create<PlanStore>()(
               p.id === planId
                 ? {
                     ...p,
-                    days: p.days.map((d) =>
-                      d.id === dayId
-                        ? {
-                            ...d,
-                            exercises: d.exercises.map((e) =>
-                              e.exerciseId === exerciseId
-                                ? { ...e, ...updates }
-                                : e
-                            ),
-                          }
-                        : d
-                    ),
+                    days: p.days.map((d) => ({
+                      ...d,
+                      exercises: d.exercises.map((e) =>
+                        e.exerciseId === exerciseId
+                          ? { ...e, ...updates }
+                          : e
+                      ),
+                    })),
                     updatedAt: new Date().toISOString(),
                   }
                 : p

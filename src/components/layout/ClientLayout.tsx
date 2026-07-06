@@ -26,6 +26,47 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     initExercises();
     initPlans();
 
+    // Auto-align progression of exercises appearing on multiple days in the active plan (e.g. Overhead Press)
+    setTimeout(() => {
+      const activePlan = usePlanStore.getState().getActivePlan();
+      if (activePlan) {
+        const maxTargets: Record<string, { sets: number; reps: string; weight?: number }> = {};
+        
+        activePlan.days.forEach((day) => {
+          day.exercises.forEach((ex) => {
+            const currentMax = maxTargets[ex.exerciseId];
+            const weight = ex.targetWeight || 0;
+            const repsNum = parseInt(ex.targetReps) || 0;
+
+            if (!currentMax) {
+              maxTargets[ex.exerciseId] = { sets: ex.targetSets, reps: ex.targetReps, weight };
+            } else {
+              const currentRepsNum = parseInt(currentMax.reps) || 0;
+              const currentVolume = currentMax.sets * currentRepsNum;
+              const newVolume = ex.targetSets * repsNum;
+
+              if (weight > (currentMax.weight || 0) || (weight === currentMax.weight && newVolume > currentVolume)) {
+                maxTargets[ex.exerciseId] = { sets: ex.targetSets, reps: ex.targetReps, weight };
+              }
+            }
+          });
+        });
+
+        activePlan.days.forEach((day) => {
+          day.exercises.forEach((ex) => {
+            const max = maxTargets[ex.exerciseId];
+            if (max && (ex.targetSets !== max.sets || ex.targetReps !== max.reps || ex.targetWeight !== max.weight)) {
+              usePlanStore.getState().updatePlanExercise(activePlan.id, day.id, ex.exerciseId, {
+                targetSets: max.sets,
+                targetReps: max.reps,
+                targetWeight: max.weight,
+              });
+            }
+          });
+        });
+      }
+    }, 100);
+
     // Intercept Google OAuth redirects
     if (window.location.hash) {
       const hash = window.location.hash.substring(1);
