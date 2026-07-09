@@ -273,14 +273,18 @@ function snapToDumbbellWeight(target: number): number {
         // Try to get weight and sets from last completed workout history for this exercise
         let lastLoggedWeight: number | undefined;
         let lastLoggedSets: any[] = [];
-        const workoutHistory = useWorkoutStore.getState().workoutHistory;
         for (const session of workoutHistory) {
           const matchedEx = session.exercises.find((e) => e.exerciseId === pe.exerciseId);
           if (matchedEx) {
-            const completedWorkingSets = matchedEx.sets.filter((s) => s.completed && s.type === "working");
-            if (completedWorkingSets.length > 0) {
-              lastLoggedWeight = completedWorkingSets[0].weight;
-              lastLoggedSets = completedWorkingSets;
+            // First try completed working sets
+            let workingSets = matchedEx.sets.filter((s) => s.completed && s.type === "working");
+            // Robust fallback: any working sets (even if checkmark was not clicked)
+            if (workingSets.length === 0) {
+              workingSets = matchedEx.sets.filter((s) => s.type === "working");
+            }
+            if (workingSets.length > 0) {
+              lastLoggedWeight = workingSets[0].weight;
+              lastLoggedSets = workingSets;
               break;
             }
           }
@@ -367,7 +371,7 @@ function snapToDumbbellWeight(target: number): number {
       startWorkout(activePlan.id, day.id, workoutExercises);
       setSelectedDay(day);
     },
-    [activePlan, startWorkout]
+    [activePlan, startWorkout, workoutHistory]
   );
 
   const handleAddSet = useCallback(

@@ -44,10 +44,32 @@ export function NextWorkoutCard({ plan, initialDayIndex }: NextWorkoutCardProps)
     };
 
     const deloadActive = useSettingsStore.getState().settings.deloadActive;
+    const workoutHistory = useWorkoutStore.getState().workoutHistory;
 
     const workoutExercises = planDay.exercises.map((pe) => {
       const reps = parseInt(pe.targetReps) || 8;
-      const baseWeight = pe.targetWeight ?? 0;
+      
+      // Try to get weight and sets from last completed workout history for this exercise
+      let lastLoggedWeight: number | undefined;
+      let lastLoggedSets: any[] = [];
+      for (const session of workoutHistory) {
+        const matchedEx = session.exercises.find((e) => e.exerciseId === pe.exerciseId);
+        if (matchedEx) {
+          // First try completed working sets
+          let workingSets = matchedEx.sets.filter((s) => s.completed && s.type === "working");
+          // Robust fallback: any working sets (even if checkmark was not clicked)
+          if (workingSets.length === 0) {
+            workingSets = matchedEx.sets.filter((s) => s.type === "working");
+          }
+          if (workingSets.length > 0) {
+            lastLoggedWeight = workingSets[0].weight;
+            lastLoggedSets = workingSets;
+            break;
+          }
+        }
+      }
+
+      const baseWeight = lastLoggedWeight !== undefined ? lastLoggedWeight : (pe.targetWeight ?? 0);
       const weight = deloadActive ? snapToDumbbellWeight(baseWeight * 0.6) : baseWeight;
 
       const sets: any[] = [];
@@ -98,10 +120,16 @@ export function NextWorkoutCard({ plan, initialDayIndex }: NextWorkoutCardProps)
       // Add regular target working sets (halved if deload active)
       const targetSetsCount = deloadActive ? Math.max(1, Math.round(pe.targetSets / 2)) : pe.targetSets;
       for (let i = 0; i < targetSetsCount; i++) {
+        let setReps = reps;
+        const isTimed = ['wall-sit', 'plank'].includes(pe.exerciseId);
+        if (isTimed && lastLoggedSets[i]) {
+          setReps = lastLoggedSets[i].reps;
+        }
+
         sets.push({
           id: generateId() + `-r${i}`,
-          reps,
-          weight,
+          reps: setReps,
+          weight: isTimed ? 0 : weight,
           type: "working",
           completed: false,
         });
