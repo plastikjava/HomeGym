@@ -46,11 +46,21 @@ export function generateWorkoutExportText(session: WorkoutSession, exercises: Ex
       const workings = completedSets.filter((s) => s.type === "working");
 
       const warmupStr = warmups
-        .map((s, idx) => `W${idx + 1}: ${s.weight} kg x ${s.reps}`)
+        .map((s, idx) => {
+          if (we.exerciseId === "pull-up") {
+            return `W${idx + 1}: Scapular Pull Ups x ${s.reps}`;
+          }
+          return `W${idx + 1}: ${s.weight} kg x ${s.reps}`;
+        })
         .join(" ");
 
       const workingStr = workings
-        .map((s, idx) => `S${idx + 1}: ${s.weight} kg x ${s.reps}`)
+        .map((s, idx) => {
+          if (we.exerciseId === "pull-up" && s.isSeconds) {
+            return `S${idx + 1}: Dead Hang: ${s.reps} sek`;
+          }
+          return `S${idx + 1}: ${s.weight} kg x ${s.reps}`;
+        })
         .join(" ");
 
       const parts = [];
