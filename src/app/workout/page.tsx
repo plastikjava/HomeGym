@@ -283,7 +283,8 @@ function snapToDumbbellWeight(target: number): number {
               workingSets = matchedEx.sets.filter((s) => s.type === "working");
             }
             if (workingSets.length > 0) {
-              lastLoggedWeight = workingSets[0].weight;
+              const maxWeight = Math.max(...workingSets.map((s) => s.weight));
+              lastLoggedWeight = maxWeight;
               lastLoggedSets = workingSets;
               break;
             }
